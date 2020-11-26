@@ -22,6 +22,9 @@ public:
     void initData();
     void initView();
 
+    void autoAim(cv::Mat mat, qreal &xDis, qreal &yDis);
+    void test();
+
     void showMask();
     void maskPlus();
     void maskMinus();
@@ -35,5 +38,8 @@ private:
     bool mask;
     int width;
     QTimer *test_timer;
+
+    bool is_in_test;
+    int count;
 };
 #endif // MAINWINDOW_H
