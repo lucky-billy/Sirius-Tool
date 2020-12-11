@@ -81,30 +81,30 @@ void MainWindow::initData()
 //        QImage image = GlobalFun::convertMatToQImage(mat);
 //        drawMask(image);
 
-        cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim/%1.png").arg(count).toStdString());
+        cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim3/%1.png").arg(count).toStdString());
         qreal xDis = 0;
         qreal yDis = 0;
         autoAim(mat, xDis, yDis);
 
         QString str = "";
         if ( xDis > 0 && yDis > 0 ) {
-            str = QStringLiteral("需要 向右 移动 ") + QString::number(xDis) + QStringLiteral(", 向下 移动 ") + QString::number(yDis);
+            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis) + QStringLiteral(", 向下 移动 ") + QString::number(yDis);
         } else if ( xDis > 0 && yDis < 0 ) {
-            str = QStringLiteral("需要 向右 移动 ") + QString::number(xDis) + QStringLiteral(", 向上 移动 ") + QString::number(-yDis);
+            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis) + QStringLiteral(", 向上 移动 ") + QString::number(-yDis);
         } else if ( xDis > 0 && yDis == 0 ) {
-            str = QStringLiteral("需要 向右 移动 ") + QString::number(xDis);
+            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis);
         } else if ( xDis < 0 && yDis > 0 ) {
-            str = QStringLiteral("需要 向左 移动 ") + QString::number(-xDis) + QStringLiteral(", 向下 移动 ") + QString::number(yDis);
+            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis) + QStringLiteral(", 向下 移动 ") + QString::number(yDis);
         } else if ( xDis < 0 && yDis < 0 ) {
-            str = QStringLiteral("需要 向左 移动 ") + QString::number(-xDis) + QStringLiteral(", 向上 移动 ") + QString::number(-yDis);
+            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis) + QStringLiteral(", 向上 移动 ") + QString::number(-yDis);
         } else if ( xDis < 0 && yDis == 0 ) {
-            str = QStringLiteral("需要 向左 移动 ") + QString::number(-xDis);
+            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis);
         } else if ( xDis == 0 && yDis > 0 ) {
-            str = QStringLiteral("需要 向下 移动 ") + QString::number(yDis);
+            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向下 移动 ") + QString::number(yDis);
         } else if ( xDis == 0 && yDis < 0 ) {
-            str = QStringLiteral("需要 向上 移动 ") + QString::number(-yDis);
+            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向上 移动 ") + QString::number(-yDis);
         } else if ( xDis == 0 && yDis == 0 ) {
-            str = QStringLiteral("对准完成");
+            str = QString("%1 - ").arg(count) + QStringLiteral("对准完成");
         }
 
         QImage image = GlobalFun::convertMatToQImage(mat);
@@ -127,7 +127,7 @@ void MainWindow::initData()
         ui->label->setPixmap(QPixmap::fromImage(pic));
 
         count++;
-        if ( count == 10 ) { count = 1; }
+        if ( count == 52 ) { count = 1; }
     });
     test_timer->start(3000);
 }
@@ -287,61 +287,70 @@ void MainWindow::autoAim(cv::Mat mat, qreal &xDis, qreal &yDis)
     // 找到所有轮廓
     vector<vector<cv::Point> > contours;
     vector<cv::Vec4i> hierarchy;
-    findContours(threshold_output, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+    findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
-    if ( contours.size() == 2 ) {
-        // 多边形逼近轮廓 + 获取矩形和圆形边界框
-        vector<vector<cv::Point>> contours_poly( contours.size() );
-        vector<cv::Rect> boundRect( contours.size() );
-        vector<cv::Point2f> center( contours.size() );
-        vector<float> radius( contours.size() );
+    // 多边形逼近轮廓 + 获取矩形和圆形边界框
+    vector<vector<cv::Point>> contours_poly( contours.size() );
+    vector<cv::Point2f> center( contours.size() );
+    vector<float> radius( contours.size() );
 
-        // 遍历每一个轮廓
-        for ( size_t i = 0; i < contours.size(); ++i )
-        {
-            approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 3, true );
-            boundRect[i] = boundingRect( cv::Mat(contours_poly[i]) );
-            minEnclosingCircle( contours_poly[i], center[i], radius[i] );   // 得到包含二维点集的最小圆
-        }
+    // 遍历每一个轮廓
+    for ( size_t i = 0; i < contours.size(); ++i )
+    {
+        approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 3, true );    // 多边拟合
+        minEnclosingCircle( contours_poly[i], center[i], radius[i] );       // 得到包含二维点集的最小圆
+    }
 
+    // 计算像素差
+    if ( contours_poly.size() < 2 )
+    {
+        xDis = 0;
+        yDis = 0;
+    }
+    else
+    {
         int centerX = mat.cols/2;
         int centerY = mat.rows/2;
-        cv::Point c;
-        cv::Point p;
+        int boundary = 20;
+        QVector<cv::Point2f> vec;
+
         for ( auto &temp : center )
         {
-            if ( abs(centerX - temp.x) <= 10 && abs(centerY - temp.y) <= 10 ) {
-                c = temp;
-            } else {
-                p = temp;
+            if ( abs(centerX - temp.x) > boundary || abs(centerY - temp.y) > boundary ) {
+               vec.push_back(temp);
             }
         }
 
-        qreal x = c.x - p.x;    // 横坐标像素差
-        qreal y = c.y - p.y;    // 纵坐标像素差
+        cv::Point2f point(0, 0);
+        for ( auto &temp: vec )
+        {
+            point.x += temp.x;
+            point.y += temp.y;
+        }
+        point.x = point.x / vec.size();
+        point.y = point.y / vec.size();
 
-        xDis = abs(x) <= 10 ? 0 : x;
-        yDis = abs(y) <= 10 ? 0 : y;
-    } else {
-        xDis = 0;
-        yDis = 0;
+        qreal x = centerX - point.x;    // 横坐标像素差
+        qreal y = centerY - point.y;    // 纵坐标像素差
+
+        xDis = abs(x) >= boundary ? x : 0;
+        yDis = abs(y) >= boundary ? y : 0;
     }
 
     //---------------------------------
 
-    // 画多边形轮廓 + 包围的矩形框 + 圆形框
+    // 画多边形轮廓 + 圆形框
 //    cv::RNG rng(12345);
 //    cv::Mat drawing = cv::Mat::zeros( threshold_output.size(), CV_8UC3 );
 
-//    for ( int i = 0; i < (int)contours.size(); ++i )
+//    for ( int i = 0; i < (int)contours_poly.size(); ++i )
 //    {
-//        cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+//        cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
 //        drawContours( drawing, contours_poly, i, color, 1, 8, vector<cv::Vec4i>(), 0, cv::Point() );    // 绘制轮廓
-//        rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );                     // 绘制外接矩形
 //        circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );                                   // 绘制外界圆
 //    }
 
-//    imshow( "Contours", drawing );
+//    imshow( "drawing", drawing );
 }
 
 void MainWindow::test()
