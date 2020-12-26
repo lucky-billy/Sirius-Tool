@@ -7,6 +7,8 @@
 #include "bbaslercamercontrol.h"
 #include "bvrcameracontrol.h"
 
+#include <QKeyEvent>
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -22,7 +24,9 @@ public:
     void initData();
     void initView();
 
+    void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
     void autoAim(cv::Mat mat, qreal &xDis, qreal &yDis);
+    void autoAimTest(cv::Mat mat, qreal &xDis, qreal &yDis);
     void test();
 
     void showMask();
@@ -30,6 +34,9 @@ public:
     void maskMinus();
     qreal processMTF(QImage &image, QRect &rect);
     void drawMask(QImage &image);
+
+protected:
+    virtual void keyPressEvent(QKeyEvent *event) override;
 
 private:
     Ui::MainWindow *ui;
