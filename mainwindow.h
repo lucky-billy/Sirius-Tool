@@ -24,16 +24,19 @@ public:
     void initData();
     void initView();
 
-    void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
-    void autoAim(cv::Mat mat, qreal &xDis, qreal &yDis);
-    void autoAimTest(cv::Mat mat, qreal &xDis, qreal &yDis);
-    void test();
-
     void showMask();
     void maskPlus();
     void maskMinus();
     qreal processMTF(QImage &image, QRect &rect);
     void drawMask(QImage &image);
+
+    void centerCalibration(cv::Mat input, cv::Mat &output, qreal &dx, qreal &dy);
+    cv::Point2f getCrossPoint(cv::Vec4i lineA, cv::Vec4i lineB);
+
+    void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
+    void autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal &xDis, qreal &yDis, qreal &zDis);
+    void autoAimTest(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal &xDis, qreal &yDis, qreal &zDis);
+    void test();
 
 protected:
     virtual void keyPressEvent(QKeyEvent *event) override;
@@ -48,5 +51,7 @@ private:
 
     bool is_in_test;
     int count;
+    qreal centerXDis;
+    qreal centerYDis;
 };
 #endif // MAINWINDOW_H

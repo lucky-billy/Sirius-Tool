@@ -9,7 +9,11 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    is_in_test = false;
+    is_in_test = true;
+
+    cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim2/1.png").toStdString());
+    cv::Mat ret;
+    centerCalibration(mat, ret, centerXDis, centerYDis);
 
     if ( !is_in_test ) {
         initData();
@@ -85,27 +89,34 @@ void MainWindow::initData()
         cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim2/%1.png").arg(count).toStdString());
         qreal xDis = 0;
         qreal yDis = 0;
-        autoAim(mat, xDis, yDis);
+        qreal zDis = 0;
+        autoAim(mat, centerXDis, centerYDis, xDis, yDis, zDis);
 
-        QString str = "";
-        if ( xDis > 0 && yDis > 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis) + QStringLiteral(", 向下 移动 ") + QString::number(yDis);
-        } else if ( xDis > 0 && yDis < 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis) + QStringLiteral(", 向上 移动 ") + QString::number(-yDis);
-        } else if ( xDis > 0 && yDis == 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis);
-        } else if ( xDis < 0 && yDis > 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis) + QStringLiteral(", 向下 移动 ") + QString::number(yDis);
-        } else if ( xDis < 0 && yDis < 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis) + QStringLiteral(", 向上 移动 ") + QString::number(-yDis);
-        } else if ( xDis < 0 && yDis == 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis);
-        } else if ( xDis == 0 && yDis > 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向下 移动 ") + QString::number(yDis);
-        } else if ( xDis == 0 && yDis < 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向上 移动 ") + QString::number(-yDis);
-        } else if ( xDis == 0 && yDis == 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("对准完成");
+        QString str = QString("%1 - ").arg(count);
+        if ( xDis > 0 ) {
+            str += QStringLiteral("向右 ") + QString::number(xDis) + " ";
+        } else if ( xDis < 0 ) {
+            str += QStringLiteral("向左 ") + QString::number(-xDis) + " ";
+        } else {
+            // pass
+        }
+
+        if ( yDis > 0 ) {
+            str += QStringLiteral("向下 ") + QString::number(yDis) + " ";
+        } else if ( yDis < 0 ) {
+            str += QStringLiteral("向上 ") + QString::number(-yDis) + " ";
+        } else {
+            // pass
+        }
+
+        if ( zDis != 0 ) {
+            str += QStringLiteral("Z向移动 ") + QString::number(zDis);
+        } else {
+            // pass
+        }
+
+        if ( xDis == 0 && yDis == 0 && zDis == 0 ) {
+            str += QStringLiteral("对准完成");
         }
 
         QImage image = GlobalFun::convertMatToQImage(mat);
@@ -128,7 +139,7 @@ void MainWindow::initData()
         ui->label->setPixmap(QPixmap::fromImage(pic));
 
         count++;
-        if ( count == 101 ) { count = 1; }
+        if ( count == 71 ) { count = 1; }
     });
     test_timer->start(2000);
 }
@@ -278,27 +289,34 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim2/%1.png").arg(count).toStdString());
         qreal xDis = 0;
         qreal yDis = 0;
-        autoAimTest(mat, xDis, yDis);
+        qreal zDis = 0;
+        autoAimTest(mat, centerXDis, centerYDis, xDis, yDis, zDis);
 
-        QString str = "";
-        if ( xDis > 0 && yDis > 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis) + QStringLiteral(", 向下 移动 ") + QString::number(yDis);
-        } else if ( xDis > 0 && yDis < 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis) + QStringLiteral(", 向上 移动 ") + QString::number(-yDis);
-        } else if ( xDis > 0 && yDis == 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向右 移动 ") + QString::number(xDis);
-        } else if ( xDis < 0 && yDis > 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis) + QStringLiteral(", 向下 移动 ") + QString::number(yDis);
-        } else if ( xDis < 0 && yDis < 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis) + QStringLiteral(", 向上 移动 ") + QString::number(-yDis);
-        } else if ( xDis < 0 && yDis == 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向左 移动 ") + QString::number(-xDis);
-        } else if ( xDis == 0 && yDis > 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向下 移动 ") + QString::number(yDis);
-        } else if ( xDis == 0 && yDis < 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("需要 向上 移动 ") + QString::number(-yDis);
-        } else if ( xDis == 0 && yDis == 0 ) {
-            str = QString("%1 - ").arg(count) + QStringLiteral("对准完成");
+        QString str = QString("%1 - ").arg(count);
+        if ( xDis > 0 ) {
+            str += QStringLiteral("向右 ") + QString::number(xDis) + " ";
+        } else if ( xDis < 0 ) {
+            str += QStringLiteral("向左 ") + QString::number(-xDis) + " ";
+        } else {
+            // pass
+        }
+
+        if ( yDis > 0 ) {
+            str += QStringLiteral("向下 ") + QString::number(yDis) + " ";
+        } else if ( yDis < 0 ) {
+            str += QStringLiteral("向上 ") + QString::number(-yDis) + " ";
+        } else {
+            // pass
+        }
+
+        if ( zDis != 0 ) {
+            str += QStringLiteral("Z向移动 ") + QString::number(zDis);
+        } else {
+            // pass
+        }
+
+        if ( xDis == 0 && yDis == 0 && zDis == 0 ) {
+            str += QStringLiteral("对准完成");
         }
 
         QImage image = GlobalFun::convertMatToQImage(mat);
@@ -321,11 +339,115 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         ui->label->setPixmap(QPixmap::fromImage(pic));
 
         count++;
-        if ( count == 101 ) { count = 1; }
+        if ( count == 71 ) { count = 1; }
     }
 }
 
 //******************************************************************************************************************
+
+void MainWindow::centerCalibration(cv::Mat input, cv::Mat &output, qreal &dx, qreal &dy)
+{
+    // 取图像中心 100x100
+    cv::Mat dst = input(cv::Range(input.rows/2 - 50, input.rows/2 + 50), cv::Range(input.cols/2 - 50, input.cols/2 + 50));
+
+    // 转化成灰度图像并进行平滑处理
+    cv::Mat src_gray;
+    cvtColor(dst, src_gray, cv::COLOR_BGR2GRAY);
+    blur(src_gray, src_gray, cv::Size(3,3));
+
+    // 阈值化
+    cv::Mat threshold_output;
+    threshold(src_gray, threshold_output, 100, 255, cv::THRESH_BINARY_INV); // 像素值小于100变成0，大于100变成255
+
+    // 边缘检测
+    cv::Mat edge;
+    Canny(threshold_output, edge, 50, 200, 3);
+
+    // 霍夫线变换
+    vector<cv::Vec2f> lines;
+    HoughLines(edge, lines, 1, CV_PI/180, 20, 0, 0);
+
+    vector<cv::Vec4i> landscape_lines;
+    vector<cv::Vec4i> portrait_lines;
+
+    // 判断是横线还是竖线，并画出所有线条
+    for( size_t i = 0; i < lines.size(); i++ )
+    {
+        float rho = lines[i][0], theta = lines[i][1];
+        cv::Point pt1, pt2;
+        double a = cos(theta), b = sin(theta);
+        double x0 = a*rho, y0 = b*rho;
+        pt1.x = cvRound(x0 + 100*(-b));
+        pt1.y = cvRound(y0 + 100*(a));
+        pt2.x = cvRound(x0 - 100*(-b));
+        pt2.y = cvRound(y0 - 100*(a));
+
+        if ( abs(pt2.x - pt1.x) < 10 ) {
+            portrait_lines.push_back(cv::Vec4i(pt1.x, pt1.y, pt2.x, pt2.y));
+        }
+        if ( abs(pt2.y - pt1.y) < 10 ) {
+            landscape_lines.push_back(cv::Vec4i(pt1.x, pt1.y, pt2.x, pt2.y));
+        }
+    }
+
+    // 计算交点
+    vector<cv::Point2f> vec;
+    for ( size_t i = 0; i < landscape_lines.size() && i < 2; ++i )
+    {
+        for ( size_t j = 0; j < portrait_lines.size() && j < 2; ++j )
+        {
+            vec.push_back(getCrossPoint(landscape_lines.at(i), portrait_lines.at(j)));
+        }
+    }
+
+    // 计算中心点
+    cv::Point2f ret(0, 0);
+    for ( auto temp : vec )
+    {
+        ret.x += temp.x;
+        ret.y += temp.y;
+    }
+
+    // 计算像素差
+    dx = ret.x / vec.size() - dst.cols/2;
+    dy = ret.y / vec.size() - dst.rows/2;
+
+    output = dst.clone();
+    line(output, cv::Point(0, 0), cv::Point(output.cols, output.rows), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+    line(output, cv::Point(output.cols, 0), cv::Point(0, output.rows), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+    line(output, cv::Point(output.cols/2+dx, output.rows/2+dy),
+         cv::Point(output.cols/2, output.rows/2), cv::Scalar(255, 0, 0), 1, cv::LINE_AA);
+}
+
+cv::Point2f MainWindow::getCrossPoint(cv::Vec4i lineA, cv::Vec4i lineB)
+{
+    cv::Point2f pt;
+    double X1 = lineA[2] - lineA[0];
+    double Y1 = lineA[3] - lineA[1];
+
+    double X2 = lineB[2] - lineB[0];
+    double Y2 = lineB[3] - lineB[1];
+
+    double X21 = lineB[0] - lineA[0];
+    double Y21 = lineB[1] - lineA[1];
+
+    double D = Y1*X2 - Y2*X1;
+
+    if ( D == 0 ) return cv::Point2f();
+
+    pt.x = (X1*X2*Y21 + Y1*X2*lineA[0] - Y2*X1*lineB[0]) / D;
+    pt.y = -(Y1*Y2*X21 + X1*Y2*lineA[1] - X2*Y1*lineB[1]) / D;
+
+    if ((abs(pt.x - lineA[0] - X1 / 2) <= abs(X1 / 2)) &&
+            (abs(pt.y - lineA[1] - Y1 / 2) <= abs(Y1 / 2)) &&
+            (abs(pt.x - lineB[0] - X2 / 2) <= abs(X2 / 2)) &&
+            (abs(pt.y - lineB[1] - Y2 / 2) <= abs(Y2 / 2)))
+    {
+        return pt;
+    }
+
+    return cv::Point2f();
+}
 
 void MainWindow::bwareaopen(cv::Mat src, cv::Mat &dst, double min_area)
 {
@@ -360,7 +482,7 @@ void MainWindow::bwareaopen(cv::Mat src, cv::Mat &dst, double min_area)
     }
 }
 
-void MainWindow::autoAim(cv::Mat mat, qreal &xDis, qreal &yDis)
+void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal &xDis, qreal &yDis, qreal &zDis)
 {
     // 转化成灰度图像并进行平滑处理
     cv::Mat src_gray;
@@ -406,8 +528,8 @@ void MainWindow::autoAim(cv::Mat mat, qreal &xDis, qreal &yDis)
     }
 
     // 确定中心点
-    int centerX = mat.cols/2+5;
-    int centerY = mat.rows/2+5;
+    int centerX = mat.cols/2 + centerXDis;
+    int centerY = mat.rows/2 + centerYDis;
     int boundary = 5;
     cv::Point centerPoint;
     qreal x = 0;
@@ -418,6 +540,7 @@ void MainWindow::autoAim(cv::Mat mat, qreal &xDis, qreal &yDis)
     {
         xDis = 0;
         yDis = 0;
+        zDis = 0;
     }
     else if ( contours_poly.size() == 1 )
     {
@@ -482,7 +605,7 @@ void MainWindow::autoAim(cv::Mat mat, qreal &xDis, qreal &yDis)
     }
 }
 
-void MainWindow::autoAimTest(cv::Mat mat, qreal &xDis, qreal &yDis)
+void MainWindow::autoAimTest(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal &xDis, qreal &yDis, qreal &zDis)
 {
     cv::destroyAllWindows();
 
@@ -494,7 +617,6 @@ void MainWindow::autoAimTest(cv::Mat mat, qreal &xDis, qreal &yDis)
     // 阈值化
     cv::Mat threshold_output;
     threshold(src_gray, threshold_output, 240, 255, cv::THRESH_BINARY);
-    cv::imshow("threshold_output1", threshold_output);
 
     // 找到所有轮廓
     vector<vector<cv::Point> > contours;
@@ -504,11 +626,11 @@ void MainWindow::autoAimTest(cv::Mat mat, qreal &xDis, qreal &yDis)
     if ( contours.size() > 2 ) {
         // 三角阈值法
         threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
-        cv::imshow("threshold_output2", threshold_output);
+//        cv::imshow("threshold_output2", threshold_output);
 
         // 删除二值图像中面积小于设置像素值的对象
         bwareaopen(threshold_output, threshold_output, 100);
-        cv::imshow("threshold_output3", threshold_output);
+//        cv::imshow("threshold_output3", threshold_output);
 
         // 开运算，先腐蚀再膨胀，能够排除小团块物体
 //        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(-1, -1));
@@ -534,8 +656,8 @@ void MainWindow::autoAimTest(cv::Mat mat, qreal &xDis, qreal &yDis)
     }
 
     // 确定中心点
-    int centerX = mat.cols/2+5;
-    int centerY = mat.rows/2+5;
+    int centerX = mat.cols/2 + centerXDis;
+    int centerY = mat.rows/2 + centerYDis;
     int boundary = 5;
     cv::Point centerPoint;
     qreal x = 0;
@@ -594,14 +716,7 @@ void MainWindow::autoAimTest(cv::Mat mat, qreal &xDis, qreal &yDis)
     for ( int i = 0; i < (int)contours_poly.size(); ++i )
     {
         cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
-//        drawContours( mat, contours_poly, i, color, 1, 8, vector<cv::Vec4i>(), 0, cv::Point() );    // 绘制轮廓
         circle( mat, center[i], (int)radius[i], color, 2, 8, 0 );                                   // 绘制外界圆
-
-//        cv::Point org;
-//        org.x = center[i].x - 2 * radius[i];
-//        org.y = center[i].y;
-//        std::string num = QString("%1").arg(i+1).toStdString();
-//        putText( mat, num, org, cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 1, cv::LINE_AA );
     }
 
     if ( xDis != 0 || yDis != 0 )
@@ -612,5 +727,5 @@ void MainWindow::autoAimTest(cv::Mat mat, qreal &xDis, qreal &yDis)
 
 void MainWindow::test()
 {
-//    cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim/1.png").toStdString());
+//    cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim2/1.png").toStdString());
 }
