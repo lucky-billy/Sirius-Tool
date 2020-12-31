@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    is_in_test = true;
+    is_in_test = false;
 
     cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim2/1.png").toStdString());
     cv::Mat ret;
@@ -90,27 +90,28 @@ void MainWindow::initData()
         qreal xDis = 0;
         qreal yDis = 0;
         qreal zDis = 0;
-        autoAim(mat, centerXDis, centerYDis, xDis, yDis, zDis);
+        qreal min_radius = 10;
+        autoAim(mat, centerXDis, centerYDis, min_radius, xDis, yDis, zDis);
 
         QString str = QString("%1 - ").arg(count);
         if ( xDis > 0 ) {
-            str += QStringLiteral("向右 ") + QString::number(xDis) + " ";
+            str += QStringLiteral("需向右 ") + QString::number(xDis);
         } else if ( xDis < 0 ) {
-            str += QStringLiteral("向左 ") + QString::number(-xDis) + " ";
+            str += QStringLiteral("需向左 ") + QString::number(-xDis);
         } else {
             // pass
         }
 
         if ( yDis > 0 ) {
-            str += QStringLiteral("向下 ") + QString::number(yDis) + " ";
+            str += QStringLiteral(" 需向下 ") + QString::number(yDis);
         } else if ( yDis < 0 ) {
-            str += QStringLiteral("向上 ") + QString::number(-yDis) + " ";
+            str += QStringLiteral(" 需向上 ") + QString::number(-yDis);
         } else {
             // pass
         }
 
         if ( zDis != 0 ) {
-            str += QStringLiteral("Z向移动 ") + QString::number(zDis);
+            str += QStringLiteral(" 需缩小 ") + QString::number(zDis) + QStringLiteral(" 倍");
         } else {
             // pass
         }
@@ -290,27 +291,28 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         qreal xDis = 0;
         qreal yDis = 0;
         qreal zDis = 0;
-        autoAimTest(mat, centerXDis, centerYDis, xDis, yDis, zDis);
+        qreal min_radius = 10;
+        autoAimTest(mat, centerXDis, centerYDis, min_radius, xDis, yDis, zDis);
 
         QString str = QString("%1 - ").arg(count);
         if ( xDis > 0 ) {
-            str += QStringLiteral("向右 ") + QString::number(xDis) + " ";
+            str += QStringLiteral("需向右 ") + QString::number(xDis);
         } else if ( xDis < 0 ) {
-            str += QStringLiteral("向左 ") + QString::number(-xDis) + " ";
+            str += QStringLiteral("需向左 ") + QString::number(-xDis);
         } else {
             // pass
         }
 
         if ( yDis > 0 ) {
-            str += QStringLiteral("向下 ") + QString::number(yDis) + " ";
+            str += QStringLiteral(" 需向下 ") + QString::number(yDis);
         } else if ( yDis < 0 ) {
-            str += QStringLiteral("向上 ") + QString::number(-yDis) + " ";
+            str += QStringLiteral(" 需向上 ") + QString::number(-yDis);
         } else {
             // pass
         }
 
         if ( zDis != 0 ) {
-            str += QStringLiteral("Z向移动 ") + QString::number(zDis);
+            str += QStringLiteral(" 需缩小 ") + QString::number(zDis) + QStringLiteral(" 倍");
         } else {
             // pass
         }
@@ -722,8 +724,17 @@ void MainWindow::bwareaopen(cv::Mat src, cv::Mat &dst, double min_area)
     }
 }
 
-void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal &xDis, qreal &yDis, qreal &zMult)
+void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius,
+                         qreal &xDis, qreal &yDis, qreal &zMult)
 {
+    // 确定中心点
+    int centerX = mat.cols/2 + centerXDis;
+    int centerY = mat.rows/2 + centerYDis;
+    int boundary = 5;
+    cv::Point centerPoint;
+
+    //---------------------------------
+
     // 转化成灰度图像并进行平滑处理
     cv::Mat src_gray;
     cvtColor(mat, src_gray, cv::COLOR_BGR2GRAY);
@@ -738,22 +749,84 @@ void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal 
     vector<cv::Vec4i> hierarchy;
     findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
-    if ( contours.size() > 2 ) {
+    if ( contours.size() > 2 )
+    {
         // 三角阈值法
         threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
 
         // 删除二值图像中面积小于设置像素值的对象
         bwareaopen(threshold_output, threshold_output, 100);
 
-        // 开运算，先腐蚀再膨胀，能够排除小团块物体
-//        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(11, 11), cv::Point(-1, -1));
-//        cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_OPEN, kernel);
+        // 闭运算
+        cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 9), cv::Point(-1, -1));
+        cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_CLOSE, kernel1);
+
+        // 开运算
+        cv::Mat kernel2 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(-1, -1));
+        cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_OPEN, kernel2);
 
         // 重新寻找轮廓
         contours.clear();
         hierarchy.clear();
         findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
     }
+    else {
+        // 检测阈值化后的结果
+        if ( contours.size() == 2 ) {
+            // 三角阈值法
+            threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
+
+            // 闭运算
+            cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 9), cv::Point(-1, -1));
+            cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_CLOSE, kernel1);
+
+            // 开运算
+            cv::Mat kernel2 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(-1, -1));
+            cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_OPEN, kernel2);
+
+            // 临时存储轮廓
+            vector<vector<cv::Point> > temp_contours;
+            vector<cv::Vec4i> temp_tehierarchy;
+
+            // 寻找轮廓
+            findContours(threshold_output, temp_contours, temp_tehierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+            if ( contours.size() > temp_contours.size() ) {
+                // 两个图形变成一个图形
+                size_t c_ts = 0;
+                size_t t_ts = 0;
+
+                for ( size_t i = 0; i < contours.size(); ++i )
+                {
+                    c_ts += contours[i].size();
+                }
+                for ( size_t i = 0; i < temp_contours.size(); ++i )
+                {
+                    t_ts += temp_contours[i].size();
+                }
+
+                if ( c_ts * 3 < t_ts ) {
+                    // 三角阈值法
+                    threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
+
+                    // 闭运算
+                    cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(15, 15), cv::Point(-1, -1));
+                    cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_CLOSE, kernel1);
+
+                    // 开运算
+                    cv::Mat kernel2 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(15, 15), cv::Point(-1, -1));
+                    cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_OPEN, kernel2);
+
+                    // 重新寻找轮廓
+                    contours.clear();
+                    hierarchy.clear();
+                    findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+                }
+            }
+        }
+    }
+
+    //---------------------------------
 
     // 多边形逼近轮廓 + 获取矩形和圆形边界框
     vector<vector<cv::Point>> contours_poly( contours.size() );
@@ -767,13 +840,186 @@ void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal 
         minEnclosingCircle( contours_poly[i], center[i], radius[i] );       // 得到包含二维点集的最小圆
     }
 
+    // 计算像素差
+    if ( contours_poly.size() == 0 )
+    {
+        xDis = 0;
+        yDis = 0;
+        zMult = 0;
+    }
+    else if ( contours_poly.size() == 1 )
+    {
+        centerPoint.x = center[0].x;
+        centerPoint.y = center[0].y;
+
+        qreal x = centerX - centerPoint.x;
+        qreal y = centerY - centerPoint.y;
+        qreal z = radius[0] / min_radius;;
+        xDis = abs(x) >= boundary ? x : 0;
+        yDis = abs(y) >= boundary ? y : 0;
+        zMult = z > 1.5 ? z : 0;
+    }
+    else
+    {
+        qreal my_radius = 0;
+
+        for ( size_t i = 0; i < radius.size(); ++i )
+        {
+            if ( radius[i] > my_radius && (abs(centerX - center[i].x) >= boundary || abs(centerY - center[i].y) >= boundary) ) {
+                centerPoint.x = center[i].x;
+                centerPoint.y = center[i].y;
+                my_radius = radius[i];
+            }
+        }
+
+        qreal x = centerX - centerPoint.x;  // 横坐标像素差
+        qreal y = centerY - centerPoint.y;  // 纵坐标像素差
+        qreal z = my_radius / min_radius;   // 放大比例
+        xDis = abs(x) >= boundary ? x : 0;
+        yDis = abs(y) >= boundary ? y : 0;
+        zMult = z > 1.5 ? z : 0;
+    }
+
+    //---------------------------------
+
+    // 画多边形轮廓 + 圆形框
+    cv::RNG rng(12345);
+    qreal my_radius = 0;
+    cv::Point my_center;
+
+    for ( int i = 0; i < (int)contours_poly.size(); ++i )
+    {
+        if ( radius[i] > my_radius && (abs(centerX - center[i].x) >= boundary || abs(centerY - center[i].y) >= boundary) ) {
+            my_radius = radius[i];
+            my_center = center[i];
+        }
+    }
+    cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
+    circle( mat, my_center, (int)my_radius, color, 2, 8, 0 );
+
+    if ( xDis != 0 || yDis != 0 )
+    {
+        line( mat, cv::Point(centerX, centerY), centerPoint, cv::Scalar(0, 0, 255), 1, cv::LINE_AA );
+    }
+}
+
+void MainWindow::autoAimTest(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius,
+                             qreal &xDis, qreal &yDis, qreal &zMult)
+{
+    cv::destroyAllWindows();
+
     // 确定中心点
     int centerX = mat.cols/2 + centerXDis;
     int centerY = mat.rows/2 + centerYDis;
     int boundary = 5;
     cv::Point centerPoint;
-    qreal x = 0;
-    qreal y = 0;
+
+    //---------------------------------
+
+    // 转化成灰度图像并进行平滑处理
+    cv::Mat src_gray;
+    cvtColor(mat, src_gray, cv::COLOR_BGR2GRAY);
+    blur(src_gray, src_gray, cv::Size(3,3));
+
+    // 阈值化
+    cv::Mat threshold_output;
+    threshold(src_gray, threshold_output, 240, 255, cv::THRESH_BINARY);
+
+    // 找到所有轮廓
+    vector<vector<cv::Point> > contours;
+    vector<cv::Vec4i> hierarchy;
+    findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+    if ( contours.size() > 2 )
+    {
+        // 三角阈值法
+        threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
+
+        // 删除二值图像中面积小于设置像素值的对象
+        bwareaopen(threshold_output, threshold_output, 100);
+
+        // 闭运算
+        cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 9), cv::Point(-1, -1));
+        cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_CLOSE, kernel1);
+
+        // 开运算
+        cv::Mat kernel2 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(-1, -1));
+        cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_OPEN, kernel2);
+
+        // 重新寻找轮廓
+        contours.clear();
+        hierarchy.clear();
+        findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+    }
+    else {
+        // 检测阈值化后的结果
+        if ( contours.size() == 2 ) {
+            // 三角阈值法
+            threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
+
+            // 闭运算
+            cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 9), cv::Point(-1, -1));
+            cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_CLOSE, kernel1);
+
+            // 开运算
+            cv::Mat kernel2 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(-1, -1));
+            cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_OPEN, kernel2);
+
+            // 临时存储轮廓
+            vector<vector<cv::Point> > temp_contours;
+            vector<cv::Vec4i> temp_tehierarchy;
+
+            // 寻找轮廓
+            findContours(threshold_output, temp_contours, temp_tehierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+            if ( contours.size() > temp_contours.size() ) {
+                // 两个图形变成一个图形
+                size_t c_ts = 0;
+                size_t t_ts = 0;
+
+                for ( size_t i = 0; i < contours.size(); ++i )
+                {
+                    c_ts += contours[i].size();
+                }
+                for ( size_t i = 0; i < temp_contours.size(); ++i )
+                {
+                    t_ts += temp_contours[i].size();
+                }
+
+                if ( c_ts * 3 < t_ts ) {
+                    // 三角阈值法
+                    threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
+
+                    // 闭运算
+                    cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(15, 15), cv::Point(-1, -1));
+                    cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_CLOSE, kernel1);
+
+                    // 开运算
+                    cv::Mat kernel2 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(15, 15), cv::Point(-1, -1));
+                    cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_OPEN, kernel2);
+
+                    // 重新寻找轮廓
+                    contours.clear();
+                    hierarchy.clear();
+                    findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+                }
+            }
+        }
+    }
+
+    //---------------------------------
+
+    // 多边形逼近轮廓 + 获取矩形和圆形边界框
+    vector<vector<cv::Point>> contours_poly( contours.size() );
+    vector<cv::Point2f> center( contours.size() );
+    vector<float> radius( contours.size() );
+
+    // 遍历每一个轮廓
+    for ( size_t i = 0; i < contours.size(); ++i )
+    {
+        approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 3, true );    // 多边拟合
+        minEnclosingCircle( contours_poly[i], center[i], radius[i] );       // 得到包含二维点集的最小圆
+    }
 
     // 计算像素差
     if ( contours_poly.size() == 0 )
@@ -786,193 +1032,56 @@ void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal 
     {
         centerPoint.x = center[0].x;
         centerPoint.y = center[0].y;
-        x = centerX - center[0].x;
-        y = centerY - center[0].y;
 
+        qreal x = centerX - centerPoint.x;
+        qreal y = centerY - centerPoint.y;
+        qreal z = radius[0] / min_radius;;
         xDis = abs(x) >= boundary ? x : 0;
         yDis = abs(y) >= boundary ? y : 0;
+        zMult = z > 1.5 ? z : 0;
     }
     else
     {
-        QVector<cv::Point2f> vec;
+        qreal my_radius = 0;
 
-        for ( auto &temp : center )
+        for ( size_t i = 0; i < radius.size(); ++i )
         {
-            if ( abs(centerX - temp.x) > boundary*2 || abs(centerY - temp.y) > boundary*2 ) {
-               vec.push_back(temp);
+            if ( radius[i] > my_radius && (abs(centerX - center[i].x) >= boundary || abs(centerY - center[i].y) >= boundary) ) {
+                centerPoint.x = center[i].x;
+                centerPoint.y = center[i].y;
+                my_radius = radius[i];
             }
         }
 
-        cv::Point2f point(0, 0);
-        for ( auto &temp: vec )
-        {
-            point.x += temp.x;
-            point.y += temp.y;
-        }
-        point.x = point.x / vec.size();
-        point.y = point.y / vec.size();
-        centerPoint.x = point.x;
-        centerPoint.y = point.y;
-
-        x = centerX - point.x;    // 横坐标像素差
-        y = centerY - point.y;    // 纵坐标像素差
-
+        qreal x = centerX - centerPoint.x;  // 横坐标像素差
+        qreal y = centerY - centerPoint.y;  // 纵坐标像素差
+        qreal z = my_radius / min_radius;   // 放大比例
         xDis = abs(x) >= boundary ? x : 0;
         yDis = abs(y) >= boundary ? y : 0;
+        zMult = z > 1.5 ? z : 0;
     }
 
     //---------------------------------
 
     // 画多边形轮廓 + 圆形框
     cv::RNG rng(12345);
+    qreal my_radius = 0;
+    cv::Point my_center;
 
     for ( int i = 0; i < (int)contours_poly.size(); ++i )
     {
-        cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
-//        drawContours( mat, contours_poly, i, color, 1, 8, vector<cv::Vec4i>(), 0, cv::Point() );    // 绘制轮廓
-        circle( mat, center[i], (int)radius[i], color, 2, 8, 0 );                                   // 绘制外界圆
-
-//        cv::Point org;
-//        org.x = center[i].x - 2 * radius[i];
-//        org.y = center[i].y;
-//        std::string num = QString("%1").arg(i+1).toStdString();
-//        putText( mat, num, org, cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 1, cv::LINE_AA );
+        if ( radius[i] > my_radius && (abs(centerX - center[i].x) >= boundary || abs(centerY - center[i].y) >= boundary) ) {
+            my_radius = radius[i];
+            my_center = center[i];
+        }
     }
+    cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
+    circle( mat, my_center, (int)my_radius, color, 2, 8, 0 );
 
     if ( xDis != 0 || yDis != 0 )
     {
         line( mat, cv::Point(centerX, centerY), centerPoint, cv::Scalar(0, 0, 255), 1, cv::LINE_AA );
     }
-}
-
-void MainWindow::autoAimTest(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal &xDis, qreal &yDis, qreal &zMult)
-{
-    cv::destroyAllWindows();
-
-    // 转化成灰度图像并进行平滑处理
-    cv::Mat src_gray;
-    cvtColor(mat, src_gray, cv::COLOR_BGR2GRAY);
-    blur(src_gray, src_gray, cv::Size(3,3));
-
-    // 阈值化
-    cv::Mat threshold_output;
-    threshold(src_gray, threshold_output, 240, 255, cv::THRESH_BINARY | cv::THRESH_TRIANGLE);
-    cv::imshow("threshold_output1", threshold_output);
-
-    cv::adaptiveThreshold(src_gray, threshold_output, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 21, 20);
-    cv::imshow("threshold_output2", threshold_output);
-
-    threshold(threshold_output, threshold_output, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-
-    cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-    morphologyEx(threshold_output, threshold_output, cv::MORPH_CLOSE, kernel, cv::Point(-1,-1), 1);
-    cv::imshow("threshold_output3", threshold_output);
-
-//    // 找到所有轮廓
-//    vector<vector<cv::Point> > contours;
-//    vector<cv::Vec4i> hierarchy;
-//    findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-
-//    if ( contours.size() > 2 ) {
-//        // 三角阈值法
-//        threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
-////        cv::imshow("threshold_output2", threshold_output);
-
-//        // 删除二值图像中面积小于设置像素值的对象
-//        bwareaopen(threshold_output, threshold_output, 100);
-////        cv::imshow("threshold_output3", threshold_output);
-
-//        // 开运算，先腐蚀再膨胀，能够排除小团块物体
-////        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(-1, -1));
-////        cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_OPEN, kernel);
-////        cv::imshow("threshold_output4", threshold_output);
-
-//        // 重新寻找轮廓
-//        contours.clear();
-//        hierarchy.clear();
-//        findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-//    }
-
-//    // 多边形逼近轮廓 + 获取矩形和圆形边界框
-//    vector<vector<cv::Point>> contours_poly( contours.size() );
-//    vector<cv::Point2f> center( contours.size() );
-//    vector<float> radius( contours.size() );
-
-//    // 遍历每一个轮廓
-//    for ( size_t i = 0; i < contours.size(); ++i )
-//    {
-//        approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 3, true );    // 多边拟合
-//        minEnclosingCircle( contours_poly[i], center[i], radius[i] );       // 得到包含二维点集的最小圆
-//    }
-
-//    // 确定中心点
-//    int centerX = mat.cols/2 + centerXDis;
-//    int centerY = mat.rows/2 + centerYDis;
-//    int boundary = 5;
-//    cv::Point centerPoint;
-//    qreal x = 0;
-//    qreal y = 0;
-
-//    // 计算像素差
-//    if ( contours_poly.size() == 0 )
-//    {
-//        xDis = 0;
-//        yDis = 0;
-//    }
-//    else if ( contours_poly.size() == 1 )
-//    {
-//        centerPoint.x = center[0].x;
-//        centerPoint.y = center[0].y;
-//        x = centerX - center[0].x;
-//        y = centerY - center[0].y;
-
-//        xDis = abs(x) >= boundary ? x : 0;
-//        yDis = abs(y) >= boundary ? y : 0;
-//    }
-//    else
-//    {
-//        QVector<cv::Point2f> vec;
-
-//        for ( auto &temp : center )
-//        {
-//            if ( abs(centerX - temp.x) > boundary*2 || abs(centerY - temp.y) > boundary*2 ) {
-//               vec.push_back(temp);
-//            }
-//        }
-
-//        cv::Point2f point(0, 0);
-//        for ( auto &temp: vec )
-//        {
-//            point.x += temp.x;
-//            point.y += temp.y;
-//        }
-//        point.x = point.x / vec.size();
-//        point.y = point.y / vec.size();
-//        centerPoint.x = point.x;
-//        centerPoint.y = point.y;
-
-//        x = centerX - point.x;    // 横坐标像素差
-//        y = centerY - point.y;    // 纵坐标像素差
-
-//        xDis = abs(x) >= boundary ? x : 0;
-//        yDis = abs(y) >= boundary ? y : 0;
-//    }
-
-//    //---------------------------------
-
-//    // 画多边形轮廓 + 圆形框
-//    cv::RNG rng(12345);
-
-//    for ( int i = 0; i < (int)contours_poly.size(); ++i )
-//    {
-//        cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
-//        circle( mat, center[i], (int)radius[i], color, 2, 8, 0 );                                   // 绘制外界圆
-//    }
-
-//    if ( xDis != 0 || yDis != 0 )
-//    {
-//        line( mat, cv::Point(centerX, centerY), centerPoint, cv::Scalar(0, 0, 255), 1, cv::LINE_AA );
-//    }
 }
 
 void MainWindow::test()
@@ -987,13 +1096,13 @@ void MainWindow::test()
 //    cv::imshow("image1", image1);
 //    cv::imshow("image2", image2);
 
-    cv::Mat image3 = cv::imread("7.png");
-    cv::Mat image4 = cv::imread("9.png");
-    qreal radius = 0;
-    qreal ret2 = 0;
-    heightCalibration(image3, image4, 5, radius, ret2);
-    qDebug() << "radius: " << radius;
-    qDebug() << "ret2: " << ret2;
-    cv::imshow("image3", image3);
-    cv::imshow("image4", image4);
+//    cv::Mat image3 = cv::imread("7.png");
+//    cv::Mat image4 = cv::imread("9.png");
+//    qreal radius = 0;
+//    qreal ret2 = 0;
+//    heightCalibration(image3, image4, 5, radius, ret2);
+//    qDebug() << "radius: " << radius;
+//    qDebug() << "ret2: " << ret2;
+//    cv::imshow("image3", image3);
+//    cv::imshow("image4", image4);
 }

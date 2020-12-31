@@ -36,8 +36,10 @@ public:
     cv::Point2f getCrossPoint(cv::Vec4i lineA, cv::Vec4i lineB);
 
     void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
-    void autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal &xDis, qreal &yDis, qreal &zMult);
-    void autoAimTest(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal &xDis, qreal &yDis, qreal &zMult);
+    void autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius,
+                 qreal &xDis, qreal &yDis, qreal &zMult);
+    void autoAimTest(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius,
+                     qreal &xDis, qreal &yDis, qreal &zMult);
     void test();
 
 protected:
