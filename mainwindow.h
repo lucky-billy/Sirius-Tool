@@ -30,16 +30,6 @@ public:
     qreal processMTF(QImage &image, QRect &rect);
     void drawMask(QImage &image);
 
-    void heightCalibration(cv::Mat origin, cv::Mat deformation, int distance, qreal &radius, qreal &scale_mm);
-    void planeCalibration(cv::Mat origin, cv::Mat deformation, int distance, qreal &pix_mm);
-    void centerCalibration(cv::Mat input, cv::Mat &output, qreal &dx, qreal &dy);
-    cv::Point2f getCrossPoint(cv::Vec4i lineA, cv::Vec4i lineB);
-
-    void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
-    void autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius,
-                 qreal &xDis, qreal &yDis, qreal &zMult);
-    void autoAimTest(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius,
-                     qreal &xDis, qreal &yDis, qreal &zMult);
     void test();
 
 protected:
@@ -55,7 +45,5 @@ private:
 
     bool is_in_test;
     int count;
-    qreal centerXDis;
-    qreal centerYDis;
 };
 #endif // MAINWINDOW_H

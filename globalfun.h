@@ -93,7 +93,7 @@ public:
     // cv::Mat 转 QImage
     static QImage convertMatToQImage(const cv::Mat mat);
 
-    // 对算法中获取的 mat 做数据处理，使其可以在界面上显示
+    // 对算法中获取的 mat 做数据处理，使其可以在界面上显示，CV_32FC1 转 CV_8UC3
     static cv::Mat dataProcessing(cv::Mat mat, bool state);
 
     // 生成透明度
@@ -101,6 +101,26 @@ public:
 
     // Mat 添加第四通道 - alpha 透明度
     static int addAlpha(cv::Mat& src, cv::Mat& dst, cv::Mat& alpha);
+
+    //------------------------------------------------------------------------------
+
+    // 自动对焦算法
+    static void autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult);
+
+    // 删除二值图像中面积小于设置像素值的对象
+    static void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
+
+    // 高度标定
+    static void heightCalibration(cv::Mat origin, cv::Mat deformation, int distance, qreal &radius, qreal &scale_mm);
+
+    // 平面标定
+    static void planeCalibration(cv::Mat origin, cv::Mat deformation, int distance, qreal &pix_mm);
+
+    // 中心标定
+    static void centerCalibration(cv::Mat input, cv::Mat &output, qreal &dx, qreal &dy);
+
+    // 获取两直线的交点
+    static cv::Point2f getCrossPoint(cv::Vec4i lineA, cv::Vec4i lineB);
 };
 
 #endif // GLOBALFUN_H
