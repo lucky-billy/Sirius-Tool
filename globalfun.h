@@ -111,10 +111,10 @@ public:
     static void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
 
     // 高度标定
-    static void heightCalibration(cv::Mat origin, cv::Mat deformation, int distance, qreal &radius, qreal &scale_mm);
+    static void heightCalibration(cv::Mat origin, cv::Mat deformation, double distance, qreal &radius, qreal &scale_mm);
 
     // 平面标定
-    static void planeCalibration(cv::Mat origin, cv::Mat deformation, int distance, qreal &pix_mm);
+    static void planeCalibration(cv::Mat origin, cv::Mat deformation, double distance, qreal &pix_mm);
 
     // 中心标定
     static void centerCalibration(cv::Mat input, cv::Mat &output, qreal &dx, qreal &dy);

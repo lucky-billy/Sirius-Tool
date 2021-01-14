@@ -82,7 +82,7 @@ void MainWindow::initData()
 //        QImage image = GlobalFun::convertMatToQImage(mat);
 //        drawMask(image);
 
-        /*
+        // 自动对焦
         cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim2/%1.png").arg(count).toStdString());
         qreal xDis = 0;
         qreal yDis = 0;
@@ -143,24 +143,24 @@ void MainWindow::initData()
 
         count++;
         if ( count == 71 ) { count = 1; }
-        */
 
-
+        /*
+        // 光暗自动调节
         cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/overExposure/%1.bmp").arg(count).toStdString());
 
         cv::Mat gray;
         cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
         blur(gray, gray, cv::Size(3,3));
 
-//        cv::Mat mean, std;
-//        meanStdDev(gray, mean, std);
+        cv::Mat mean, std;
+        meanStdDev(gray, mean, std);
 
-//        double m, s;
-//        m = mean.at<double>(0,0);
-//        s = std.at<double>(0,0);
+        double m, s;
+        m = mean.at<double>(0,0);
+        s = std.at<double>(0,0);
 
         QString str = QString("%1 - ").arg(count);
-//        str += "mean: " + QString::number(m) + ", std: " + QString::number(s);
+        str += "mean: " + QString::number(m) + ", std: " + QString::number(s);
 
         double minVal = 0;
         double maxVal = 0;
@@ -196,6 +196,8 @@ void MainWindow::initData()
 
         count++;
         if ( count == 15 ) { count = 1; }
+        */
+
     });
     test_timer->start(3000);
 }
@@ -409,5 +411,21 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::test()
 {
-//    cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim2/1.png").toStdString());
+    // 测试平面标定和高度标定
+    cv::Mat mat1 = cv::imread(QString("../Sirius-Tool/test/1.png").toStdString());
+    cv::Mat mat2 = cv::imread(QString("../Sirius-Tool/test/2.png").toStdString());
+    cv::Mat mat3 = cv::imread(QString("../Sirius-Tool/test/3.png").toStdString());
+    cv::Mat mat4 = cv::imread(QString("../Sirius-Tool/test/4.png").toStdString());
+
+    qreal pix_mm = 0;
+    GlobalFun::planeCalibration(mat1, mat2, 0.1, pix_mm);
+    cv::imshow("mat2", mat2);
+    qDebug() << "pix_mm: " << pix_mm;
+
+    qreal radius;
+    qreal scale_mm;
+    GlobalFun::heightCalibration(mat3, mat4, 0.025, radius, scale_mm);
+    cv::imshow("mat4", mat4);
+    qDebug() << "radius: " << radius;
+    qDebug() << "scale_mm: " << scale_mm;
 }

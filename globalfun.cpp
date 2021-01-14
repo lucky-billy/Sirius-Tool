@@ -425,7 +425,7 @@ void GlobalFun::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal m
     // 确定中心点
     int centerX = mat.cols/2 + centerXDis;
     int centerY = mat.rows/2 + centerYDis;
-    int boundary = 5;
+    int boundary = 10;
     cv::Point centerPoint;
 
     //---------------------------------
@@ -631,7 +631,7 @@ void GlobalFun::bwareaopen(cv::Mat src, cv::Mat &dst, double min_area)
     }
 }
 
-void GlobalFun::heightCalibration(cv::Mat origin, cv::Mat deformation, int distance, qreal &radius, qreal &scale_mm)
+void GlobalFun::heightCalibration(cv::Mat origin, cv::Mat deformation, double distance, qreal &radius, qreal &scale_mm)
 {
     // 转化成灰度图像并进行平滑处理
     cv::Mat gray1;
@@ -708,7 +708,7 @@ void GlobalFun::heightCalibration(cv::Mat origin, cv::Mat deformation, int dista
 
     qreal centerX = origin.cols/2 + dx;
     qreal centerY = origin.rows/2 + dy;
-    int boundary = 5;
+    int boundary = 10;
 
     // 去除中心点
     vector<cv::Point2f> center3;
@@ -767,7 +767,7 @@ void GlobalFun::heightCalibration(cv::Mat origin, cv::Mat deformation, int dista
     }
 }
 
-void GlobalFun::planeCalibration(cv::Mat origin, cv::Mat deformation, int distance, qreal &pix_mm)
+void GlobalFun::planeCalibration(cv::Mat origin, cv::Mat deformation, double distance, qreal &pix_mm)
 {
     // 转化成灰度图像并进行平滑处理
     cv::Mat gray1;
@@ -818,7 +818,7 @@ void GlobalFun::planeCalibration(cv::Mat origin, cv::Mat deformation, int distan
 
     qreal centerX = origin.cols/2 + dx;
     qreal centerY = origin.rows/2 + dy;
-    int boundary = 5;
+    int boundary = 10;
 
     // 去除中心点
     vector<cv::Point2f> center3;
