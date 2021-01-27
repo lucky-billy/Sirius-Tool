@@ -31,6 +31,7 @@ public:
     void drawMask(QImage &image);
 
     void test();
+    void autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult);
 
 protected:
     virtual void keyPressEvent(QKeyEvent *event) override;
