@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
         initView();
     } else {
         count = 1;
-//        test();
+        test();
     }
 }
 
@@ -431,23 +431,27 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::test()
 {
-    // 测试平面标定和高度标定
-    cv::Mat mat1 = cv::imread(QString("../Sirius-Tool/test/1.png").toStdString());
-    cv::Mat mat2 = cv::imread(QString("../Sirius-Tool/test/2.png").toStdString());
-    cv::Mat mat3 = cv::imread(QString("../Sirius-Tool/test/3.png").toStdString());
-    cv::Mat mat4 = cv::imread(QString("../Sirius-Tool/test/4.png").toStdString());
+    int module = 2;
 
-    qreal pix_mm = 0;
-    GlobalFun::planeCalibration(mat1, mat2, 0.1, pix_mm);
-    cv::imshow("mat2", mat2);
-    qDebug() << "pix_mm: " << pix_mm;
+    if ( module == 1 ) {
+        // 测试平面标定和高度标定
+        cv::Mat mat1 = cv::imread(QString("../Sirius-Tool/test/1.png").toStdString());
+        cv::Mat mat2 = cv::imread(QString("../Sirius-Tool/test/2.png").toStdString());
+        cv::Mat mat3 = cv::imread(QString("../Sirius-Tool/test/3.png").toStdString());
+        cv::Mat mat4 = cv::imread(QString("../Sirius-Tool/test/4.png").toStdString());
 
-    qreal radius;
-    qreal scale_mm;
-    GlobalFun::heightCalibration(mat3, mat4, 0.025, radius, scale_mm);
-    cv::imshow("mat4", mat4);
-    qDebug() << "radius: " << radius;
-    qDebug() << "scale_mm: " << scale_mm;
+        qreal pix_mm = 0;
+        GlobalFun::planeCalibration(mat1, mat2, 0.1, pix_mm);
+        cv::imshow("mat2", mat2);
+        qDebug() << "pix_mm: " << pix_mm;
+
+        qreal radius;
+        qreal scale_mm;
+        GlobalFun::heightCalibration(mat3, mat4, 0.025, radius, scale_mm);
+        cv::imshow("mat4", mat4);
+        qDebug() << "radius: " << radius;
+        qDebug() << "scale_mm: " << scale_mm;
+    }
 }
 
 void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult)
