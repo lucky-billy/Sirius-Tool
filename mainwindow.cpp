@@ -364,7 +364,7 @@ void MainWindow::drawMask(QImage &image)
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     if ( event->key() == Qt::Key_Enter ) {
-        cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim4/%1.png").arg(count).toStdString());
+        cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim7/%1.png").arg(count).toStdString());
         qreal xDis = 0;
         qreal yDis = 0;
         qreal zDis = 0;
@@ -423,7 +423,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         ui->label->setPixmap(QPixmap::fromImage(pic));
 
         count++;
-        if ( count == 168 ) { count = 1; }
+        if ( count == 109 ) { count = 1; }
     }
 }
 
@@ -451,6 +451,30 @@ void MainWindow::test()
         cv::imshow("mat4", mat4);
         qDebug() << "radius: " << radius;
         qDebug() << "scale_mm: " << scale_mm;
+    }
+    else if ( module == 2 ) {
+        // ͸�ӱ任
+        cv::Mat src = cv::imread(QString("../Sirius-Tool/test/src.png").toStdString());
+        cv::imshow("src", src);
+        int width = src.cols;
+        int height = src.rows;
+
+        vector<cv::Point2f> src_coners(4);
+        src_coners[0] = cv::Point2f(0, 0);
+        src_coners[1] = cv::Point2f(100, 0);
+        src_coners[2] = cv::Point2f(0, height);
+        src_coners[3] = cv::Point2f(100, height);
+
+        vector<cv::Point2f> dst_coners(4);
+        dst_coners[0] = cv::Point2f(0, 0);
+        dst_coners[1] = cv::Point2f(width, 0);
+        dst_coners[2] = cv::Point2f(0, height);
+        dst_coners[3] = cv::Point2f(width, height);
+
+        cv::Mat warpMatrix = getPerspectiveTransform(src_coners, dst_coners);
+        cv::Mat dst;
+        warpPerspective(src, dst, warpMatrix, dst.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+        cv::imshow("dst", dst);
     }
 }
 
