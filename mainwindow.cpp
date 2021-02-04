@@ -454,27 +454,40 @@ void MainWindow::test()
     }
     else if ( module == 2 ) {
         // Õ∏ ”±‰ªª
-        cv::Mat src = cv::imread(QString("../Sirius-Tool/test/src.png").toStdString());
-        cv::imshow("src", src);
-        int width = src.cols;
-        int height = src.rows;
+        cv::Mat src1 = cv::imread(QString("../Sirius-Tool/test/src1.png").toStdString());
+        cv::imshow("src1", src1);
 
         vector<cv::Point2f> src_coners(4);
         src_coners[0] = cv::Point2f(0, 0);
         src_coners[1] = cv::Point2f(100, 0);
-        src_coners[2] = cv::Point2f(0, height);
-        src_coners[3] = cv::Point2f(100, height);
+        src_coners[2] = cv::Point2f(0, 363);
+        src_coners[3] = cv::Point2f(100, 363);
 
         vector<cv::Point2f> dst_coners(4);
         dst_coners[0] = cv::Point2f(0, 0);
-        dst_coners[1] = cv::Point2f(width, 0);
-        dst_coners[2] = cv::Point2f(0, height);
-        dst_coners[3] = cv::Point2f(width, height);
+        dst_coners[1] = cv::Point2f(638, 0);
+        dst_coners[2] = cv::Point2f(0, 363);
+        dst_coners[3] = cv::Point2f(638, 363);
 
         cv::Mat warpMatrix = getPerspectiveTransform(src_coners, dst_coners);
-        cv::Mat dst;
-        warpPerspective(src, dst, warpMatrix, dst.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
-        cv::imshow("dst", dst);
+        cv::Mat dst1;
+        warpPerspective(src1, dst1, warpMatrix, dst1.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+        cv::imshow("dst1", dst1);
+
+        //---------------------------------
+
+        // ¿≠…Ï
+        cv::Mat src2 = cv::imread(QString("../Sirius-Tool/test/src2.png").toStdString());
+        cv::imshow("src2", src2);
+
+        cv::Mat dst2;
+        cv::resize(src2, dst2, cv::Size(638, 363));
+        cv::imshow("dst2", dst2);
+
+        //---------------------------------
+
+        cv::Mat pic = cv::imread(QString("../Sirius-Tool/test/pic.png").toStdString());
+        cv::imshow("pic", pic);
     }
 }
 
