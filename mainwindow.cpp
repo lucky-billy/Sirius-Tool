@@ -431,7 +431,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::test()
 {
-    int module = 2;
+    int module = 3;
 
     if ( module == 1 ) {
         // 测试平面标定和高度标定
@@ -513,8 +513,7 @@ void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal 
     threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
 
     // 删除二值图像中面积小于设置像素值的对象
-    GlobalFun::bwareaopen(threshold_output, threshold_output, 10);
-
+    GlobalFun::bwareaopen(threshold_output, threshold_output, 20);
     // 膨胀
     cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3), cv::Point(-1, -1));
     cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_DILATE, kernel1);
