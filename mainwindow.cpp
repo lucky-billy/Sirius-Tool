@@ -89,7 +89,8 @@ void MainWindow::initData()
 
         if ( module == 2 ) {
             // 自动对焦
-            cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim2/%1.png").arg(count).toStdString());
+            cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim8/%1.png").arg(count).toStdString());
+            cv::Mat ori = cv::imread("../Sirius-Tool/test/aim8/3.png");
             qreal xDis = 0;
             qreal yDis = 0;
             qreal zDis = 0;
@@ -98,8 +99,8 @@ void MainWindow::initData()
             cv::Mat ret;
             qreal centerXDis = 0;
             qreal centerYDis = 0;
-            GlobalFun::centerCalibration(mat, ret, centerXDis, centerYDis);
-            GlobalFun::autoAim(mat, centerXDis, centerYDis, min_radius, xDis, yDis, zDis);
+            GlobalFun::centerCalibration(src, ret, centerXDis, centerYDis);
+            GlobalFun::autoAim(src, ori, centerXDis, centerYDis, min_radius, xDis, yDis, zDis);
 
             QString str = QString("%1 - ").arg(count);
             if ( xDis > 0 ) {
@@ -128,7 +129,7 @@ void MainWindow::initData()
                 str += QStringLiteral("对准完成");
             }
 
-            QImage image = GlobalFun::convertMatToQImage(mat);
+            QImage image = GlobalFun::convertMatToQImage(src);
             QImage pic = image.scaled(ui->label->width(), ui->label->height(), Qt::KeepAspectRatio);
             QPainter painter(&pic);
             QFont font;
@@ -148,7 +149,7 @@ void MainWindow::initData()
             ui->label->setPixmap(QPixmap::fromImage(pic));
 
             count++;
-            if ( count == 71 ) { count = 1; }
+            if ( count == 362 ) { count = 1; }
         }
 
         if ( module == 3 ) {
@@ -364,7 +365,8 @@ void MainWindow::drawMask(QImage &image)
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     if ( event->key() == Qt::Key_Enter ) {
-        cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/aim7/%1.png").arg(count).toStdString());
+        cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim8/%1.png").arg(count).toStdString());
+        cv::Mat ori = cv::imread("../Sirius-Tool/test/aim8/3.png");
         qreal xDis = 0;
         qreal yDis = 0;
         qreal zDis = 0;
@@ -373,8 +375,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         cv::Mat ret;
         qreal centerXDis = 0;
         qreal centerYDis = 0;
-        GlobalFun::centerCalibration(mat, ret, centerXDis, centerYDis);
-        autoAim(mat, centerXDis, centerYDis, min_radius, xDis, yDis, zDis);
+        GlobalFun::centerCalibration(src, ret, centerXDis, centerYDis);
+        GlobalFun::autoAim(src, ori, centerXDis, centerYDis, min_radius, xDis, yDis, zDis);
 
         QString str = QString("%1 - ").arg(count);
         if ( xDis > 0 ) {
@@ -403,7 +405,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             str += QStringLiteral("对准完成");
         }
 
-        QImage image = GlobalFun::convertMatToQImage(mat);
+        QImage image = GlobalFun::convertMatToQImage(src);
         QImage pic = image.scaled(ui->label->width(), ui->label->height(), Qt::KeepAspectRatio);
         QPainter painter(&pic);
         QFont font;
@@ -423,7 +425,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         ui->label->setPixmap(QPixmap::fromImage(pic));
 
         count++;
-        if ( count == 109 ) { count = 1; }
+        if ( count == 362 ) { count = 1; }
     }
 }
 
@@ -431,30 +433,31 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::test()
 {
-    int module = 3;
+    int module = 1;
 
     if ( module == 1 ) {
         // 测试平面标定和高度标定
-        cv::Mat mat1 = cv::imread(QString("../Sirius-Tool/test/1.png").toStdString());
-        cv::Mat mat2 = cv::imread(QString("../Sirius-Tool/test/2.png").toStdString());
-        cv::Mat mat3 = cv::imread(QString("../Sirius-Tool/test/3.png").toStdString());
-        cv::Mat mat4 = cv::imread(QString("../Sirius-Tool/test/4.png").toStdString());
+        cv::Mat ori = cv::imread(QString("../Sirius-Tool/test/calibration/ori.png").toStdString());
+        cv::Mat mat1 = cv::imread(QString("../Sirius-Tool/test/calibration/1.png").toStdString());
+        cv::Mat mat2 = cv::imread(QString("../Sirius-Tool/test/calibration/2.png").toStdString());
+//        cv::Mat mat3 = cv::imread(QString("../Sirius-Tool/test/calibration/3.png").toStdString());
+//        cv::Mat mat4 = cv::imread(QString("../Sirius-Tool/test/calibration/4.png").toStdString());
 
         qreal pix_mm = 0;
-        GlobalFun::planeCalibration(mat1, mat2, 0.1, pix_mm);
+        GlobalFun::planeCalibration(mat1, mat2, ori, 0.1, pix_mm);
         cv::imshow("mat2", mat2);
         qDebug() << "pix_mm: " << pix_mm;
 
-        qreal radius;
-        qreal scale_mm;
-        GlobalFun::heightCalibration(mat3, mat4, 0.025, radius, scale_mm);
-        cv::imshow("mat4", mat4);
-        qDebug() << "radius: " << radius;
-        qDebug() << "scale_mm: " << scale_mm;
+//        qreal radius;
+//        qreal scale_mm;
+//        GlobalFun::heightCalibration(mat3, mat4, ori, 0.025, radius, scale_mm);
+//        cv::imshow("mat4", mat4);
+//        qDebug() << "radius: " << radius;
+//        qDebug() << "scale_mm: " << scale_mm;
     }
     else if ( module == 2 ) {
         // 透视变换
-        cv::Mat src1 = cv::imread(QString("../Sirius-Tool/test/src1.png").toStdString());
+        cv::Mat src1 = cv::imread(QString("../Sirius-Tool/test/resize/src1.png").toStdString());
         cv::imshow("src1", src1);
 
         vector<cv::Point2f> src_coners(4);
@@ -477,7 +480,7 @@ void MainWindow::test()
         //---------------------------------
 
         // 拉伸
-        cv::Mat src2 = cv::imread(QString("../Sirius-Tool/test/src2.png").toStdString());
+        cv::Mat src2 = cv::imread(QString("../Sirius-Tool/test/resize/src2.png").toStdString());
         cv::imshow("src2", src2);
 
         cv::Mat dst2;
@@ -486,116 +489,7 @@ void MainWindow::test()
 
         //---------------------------------
 
-        cv::Mat pic = cv::imread(QString("../Sirius-Tool/test/pic.png").toStdString());
+        cv::Mat pic = cv::imread(QString("../Sirius-Tool/test/resize/pic.png").toStdString());
         cv::imshow("pic", pic);
-    }
-}
-
-void MainWindow::autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult)
-{
-    cv::destroyAllWindows();
-
-    // 确定中心点
-    int centerX = mat.cols/2 + centerXDis;
-    int centerY = mat.rows/2 + centerYDis;
-    int boundary = 8;
-    cv::Point centerPoint;
-
-    //---------------------------------
-
-    // 转化成灰度图像并进行平滑处理
-    cv::Mat src_gray;
-    cvtColor(mat, src_gray, cv::COLOR_BGR2GRAY);
-    blur(src_gray, src_gray, cv::Size(3,3));
-
-    // 三角阈值法
-    cv::Mat threshold_output;
-    threshold(src_gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
-
-    // 删除二值图像中面积小于设置像素值的对象
-    GlobalFun::bwareaopen(threshold_output, threshold_output, 20);
-    // 膨胀
-    cv::Mat kernel1 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3), cv::Point(-1, -1));
-    cv::morphologyEx(threshold_output, threshold_output, cv::MORPH_DILATE, kernel1);
-
-    // 找到所有轮廓
-    vector<vector<cv::Point> > contours;
-    vector<cv::Vec4i> hierarchy;
-    findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-
-    //---------------------------------
-
-    // 多边形逼近轮廓 + 获取矩形和圆形边界框
-    vector<vector<cv::Point>> contours_poly( contours.size() );
-    vector<cv::Point2f> center( contours.size() );
-    vector<float> radius( contours.size() );
-
-    // 遍历每一个轮廓
-    for ( size_t i = 0; i < contours.size(); ++i )
-    {
-        approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 3, true );    // 多边拟合
-        minEnclosingCircle( contours_poly[i], center[i], radius[i] );       // 得到包含二维点集的最小圆
-    }
-
-    // 计算像素差
-    if ( contours_poly.size() == 0 )
-    {
-        xDis = 0;
-        yDis = 0;
-        zMult = 0;
-    }
-    else if ( contours_poly.size() == 1 )
-    {
-        centerPoint.x = center[0].x;
-        centerPoint.y = center[0].y;
-
-        qreal x = centerX - centerPoint.x;
-        qreal y = centerY - centerPoint.y;
-        qreal z = radius[0] / min_radius;;
-        xDis = abs(x) >= boundary ? x : 0;
-        yDis = abs(y) >= boundary ? y : 0;
-        zMult = z > 1.5 ? z : 0;
-    }
-    else
-    {
-        qreal my_radius = 0;
-
-        for ( size_t i = 0; i < radius.size(); ++i )
-        {
-            if ( radius[i] > my_radius && (abs(centerX - center[i].x) >= boundary || abs(centerY - center[i].y) >= boundary) ) {
-                centerPoint.x = center[i].x;
-                centerPoint.y = center[i].y;
-                my_radius = radius[i];
-            }
-        }
-
-        qreal x = centerX - centerPoint.x;  // 横坐标像素差
-        qreal y = centerY - centerPoint.y;  // 纵坐标像素差
-        qreal z = my_radius / min_radius;   // 放大比例
-        xDis = abs(x) >= boundary ? x : 0;
-        yDis = abs(y) >= boundary ? y : 0;
-        zMult = z > 1.5 ? z : 0;
-    }
-
-    //---------------------------------
-
-    // 画多边形轮廓 + 圆形框
-    cv::RNG rng(12345);
-    qreal my_radius = 0;
-    cv::Point my_center;
-
-    for ( int i = 0; i < (int)contours_poly.size(); ++i )
-    {
-        if ( radius[i] > my_radius && (abs(centerX - center[i].x) >= boundary || abs(centerY - center[i].y) >= boundary) ) {
-            my_radius = radius[i];
-            my_center = center[i];
-        }
-    }
-    cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
-    circle( mat, my_center, (int)my_radius, color, 2, 8, 0 );
-
-    if ( xDis != 0 || yDis != 0 )
-    {
-        line( mat, cv::Point(centerX, centerY), centerPoint, cv::Scalar(0, 0, 255), 1, cv::LINE_AA );
     }
 }

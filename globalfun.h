@@ -105,19 +105,23 @@ public:
     //------------------------------------------------------------------------------
 
     // 自动对焦算法
-    static void autoAim(cv::Mat mat, qreal centerXDis, qreal centerYDis, qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult);
-
-    // 删除二值图像中面积小于设置像素值的对象
-    static void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
+    static void autoAim(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal centerYDis,
+                        qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult);
 
     // 高度标定
-    static void heightCalibration(cv::Mat origin, cv::Mat deformation, double distance, qreal &radius, qreal &scale_mm);
+    static void heightCalibration(cv::Mat src, cv::Mat def, cv::Mat ori, double distance, qreal &radius, qreal &scale_mm);
 
     // 平面标定
-    static void planeCalibration(cv::Mat origin, cv::Mat deformation, double distance, qreal &pix_mm);
+    static void planeCalibration(cv::Mat src, cv::Mat def, cv::Mat ori, double distance, qreal &pix_mm);
 
     // 中心标定
     static void centerCalibration(cv::Mat input, cv::Mat &output, qreal &dx, qreal &dy);
+
+    // 得到包含二维点集的最小圆的圆心的半径
+    static void getMinCircle(cv::Mat src, cv::Mat ori, cv::Point2f &center, float &radius);
+
+    // 删除二值图像中面积小于设置像素值的对象
+    static void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
 
     // 获取两直线的交点
     static cv::Point2f getCrossPoint(cv::Vec4i lineA, cv::Vec4i lineB);
