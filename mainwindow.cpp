@@ -365,8 +365,8 @@ void MainWindow::drawMask(QImage &image)
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     if ( event->key() == Qt::Key_Enter ) {
-        cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim8/%1.png").arg(count).toStdString());
-        cv::Mat ori = cv::imread("../Sirius-Tool/test/aim8/3.png");
+        cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim9/%1.png").arg(count).toStdString());
+        cv::Mat ori = cv::imread("../Sirius-Tool/test/aim9/112.png");
         qreal xDis = 0;
         qreal yDis = 0;
         qreal zDis = 0;
@@ -425,7 +425,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         ui->label->setPixmap(QPixmap::fromImage(pic));
 
         count++;
-        if ( count == 362 ) { count = 1; }
+        if ( count == 237 ) { count = 1; }
     }
 }
 
@@ -433,7 +433,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::test()
 {
-    int module = 1;
+    int module = 3;
 
     if ( module == 1 ) {
         // 测试平面标定和高度标定
