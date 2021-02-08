@@ -99,8 +99,9 @@ void MainWindow::initData()
             cv::Mat ret;
             qreal centerXDis = 0;
             qreal centerYDis = 0;
+            float radius = 0;
             GlobalFun::centerCalibration(src, ret, centerXDis, centerYDis);
-            GlobalFun::autoAim(src, ori, centerXDis, centerYDis, min_radius, xDis, yDis, zDis);
+            GlobalFun::autoAim(src, ori, centerXDis, centerYDis, min_radius, xDis, yDis, zDis, radius);
 
             QString str = QString("%1 - ").arg(count);
             if ( xDis > 0 ) {
@@ -375,8 +376,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         cv::Mat ret;
         qreal centerXDis = 0;
         qreal centerYDis = 0;
+        float radius = 0;
         GlobalFun::centerCalibration(src, ret, centerXDis, centerYDis);
-        GlobalFun::autoAim(src, ori, centerXDis, centerYDis, min_radius, xDis, yDis, zDis);
+        GlobalFun::autoAim(src, ori, centerXDis, centerYDis, min_radius, xDis, yDis, zDis, radius);
+        qDebug() << "radius: " << radius;
 
         QString str = QString("%1 - ").arg(count);
         if ( xDis > 0 ) {
@@ -451,6 +454,7 @@ void MainWindow::test()
         qreal radius;
         qreal scale_mm;
         GlobalFun::heightCalibration(mat3, mat4, ori, 0.025, radius, scale_mm);
+        cv::imshow("mat3", mat3);
         cv::imshow("mat4", mat4);
         qDebug() << "radius: " << radius;
         qDebug() << "scale_mm: " << scale_mm;

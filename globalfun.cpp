@@ -421,7 +421,7 @@ int GlobalFun::addAlpha(cv::Mat& src, cv::Mat& dst, cv::Mat& alpha)
 //------------------------------------------------------------------------------
 
 void GlobalFun::autoAim(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal centerYDis,
-                        qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult)
+                        qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult, float &radius)
 {
     // 确定中心点
     int centerX = src.cols/2 + centerXDis;
@@ -431,7 +431,6 @@ void GlobalFun::autoAim(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal center
 
     // 得到包含二维点集的最小圆的圆心的半径
     cv::Point2f center;
-    float radius;
     getMinCircle(src, ori, center, radius);
 
     if ( radius == 0 ) {
@@ -493,6 +492,7 @@ void GlobalFun::heightCalibration(cv::Mat src, cv::Mat def, cv::Mat ori, double 
 
         cv::RNG rng(12345);
         cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
+        circle( src, src_center, (int)src_radius, color, 2, 8, 0 );
         circle( def, def_center, (int)def_radius, color, 2, 8, 0 );
 
         string str = QString::number(def_radius).toStdString();

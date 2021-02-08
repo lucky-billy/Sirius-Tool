@@ -106,7 +106,7 @@ public:
 
     // 自动对焦算法
     static void autoAim(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal centerYDis,
-                        qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult);
+                        qreal min_radius, qreal &xDis, qreal &yDis, qreal &zMult, float &radius);
 
     // 高度标定
     static void heightCalibration(cv::Mat src, cv::Mat def, cv::Mat ori, double distance, qreal &radius, qreal &scale_mm);
