@@ -480,7 +480,7 @@ void GlobalFun::autoAim(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal center
 
     // 得到包含二维点集的最小圆的圆心的半径
     cv::Point2f center;
-    getMinCircle(src, ori, centerX, centerY, min_radius, center, radius);
+    getMinCircle(src, ori, center, radius);
 
     if ( radius == 0 ) {
         xDis = 0;
@@ -670,11 +670,11 @@ void GlobalFun::getMinCircle(cv::Mat src, cv::Mat ori, cv::Point2f &center, floa
     cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
     cvtColor(ori, ori_gray, cv::COLOR_BGR2GRAY);
     gray = src_gray - ori_gray;
-    blur(gray, gray, cv::Size(3,3));
+    blur(gray, gray, cv::Size(3, 3));
 
-    // 三角阈值法
+    // 自适应阈值法
     cv::Mat threshold_output;
-    threshold(gray, threshold_output, 0, 255, cv::THRESH_TRIANGLE);
+    threshold(gray, threshold_output, 0, 255, cv::THRESH_OTSU);
 
     // 过滤小于设置点数的图形
     bwareaopen(threshold_output, threshold_output, 30);
@@ -687,80 +687,6 @@ void GlobalFun::getMinCircle(cv::Mat src, cv::Mat ori, cv::Point2f &center, floa
     // 数据初始化
     center = cv::Point2f(0, 0);
     radius = 0;
-
-    if ( contours.size() != 0 )
-    {
-        size_t index = 0;
-        size_t maxSize = 0;
-
-        // 寻找最大的点集
-        for ( size_t i = 0; i < contours.size(); ++i )
-        {
-            if ( contours[i].size() > maxSize ) {
-                maxSize = contours[i].size();
-                index = i;
-            }
-        }
-
-        // 得到包含二维点集的最小圆的圆心的半径
-        vector<cv::Point> contours_poly = contours[index];
-        minEnclosingCircle(contours_poly, center, radius);
-    }
-}
-
-void GlobalFun::getMinCircle(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal centerYDis,
-                             qreal min_radius, cv::Point2f &center, float &radius)
-{
-    // 数据初始化
-    center = cv::Point2f(0, 0);
-    radius = 0;
-
-    // 转化成灰度图像并进行平滑处理
-    cv::Mat src_gray, ori_gray, gray;
-    cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
-    cvtColor(ori, ori_gray, cv::COLOR_BGR2GRAY);
-    gray = src_gray - ori_gray;
-    blur(gray, gray, cv::Size(3,3));
-
-    // 三角阈值化
-    cv::Mat triangle;
-    threshold(gray, triangle, 0, 255, cv::THRESH_TRIANGLE);
-
-    // 过滤小于设置点数的图形
-    bwareaopen(triangle, triangle, 20);
-
-    // 腐蚀
-    cv::Mat element = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-    cv::erode(triangle, triangle, element);
-
-    // 过滤小于设置点数的图形
-    bwareaopen(triangle, triangle, 3);
-
-    // 找到所有轮廓
-    vector<vector<cv::Point>> contours;
-    vector<cv::Vec4i> hierarchy;
-    findContours(triangle, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, cv::Point(0, 0));
-
-    if ( contours.size() == 1 ) {
-        // 得到包含二维点集的最小圆的圆心的半径
-        minEnclosingCircle(contours[0], center, radius);
-
-        qreal x = abs(centerXDis - center.x);
-        qreal y = abs(centerYDis - center.y);
-        if ( x < 15 && y < 15 && radius < min_radius*1.5 ) {
-            return;
-        }
-    }
-
-    // 自适应阈值法
-    cv::Mat otsu;
-    threshold(gray, otsu, 0, 255, cv::THRESH_OTSU);
-
-    // 过滤小于设置点数的图形
-    bwareaopen(otsu, otsu, 30);
-
-    // 找到所有轮廓
-    findContours(otsu, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, cv::Point(0, 0));
 
     if ( contours.size() != 0 )
     {
