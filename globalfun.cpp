@@ -46,6 +46,7 @@ QString GlobalFun::getCurrentTime(int type)
     case 3: return time.toString("yyyy-MM-dd");
     case 4: return time.toString("yyyy-MM");
     case 5: return time.toString("yyyy-MM-dd hh:mm:ss");
+    case 6: return time.toString("yyyy-MM-dd_hh:mm:ss");
     default: return "";
     }
 }
@@ -68,7 +69,7 @@ void GlobalFun::bsleep(int second)
     timer.start();
     while ( timer.elapsed() < second )
     {
-        QCoreApplication::processEvents();
+        QCoreApplication::processEvents();  // 非阻塞延时 - 不停地处理事件，让程序保持响应
     }
 }
 
@@ -148,6 +149,8 @@ void GlobalFun::exportCSV(QString path, QTableWidget *widget)
             data << linelist.join(",") + "\n";
         }
         file.close();
+
+        showMessageBox(2, "Saved csv file successfully !");
     }
 }
 
@@ -254,6 +257,51 @@ void GlobalFun::overExposure(QImage& image)
 //    std::cout << "times = " << end_time - start_time << std::endl;
 }
 
+int GlobalFun::brightnessJud(QImage& image)
+{
+    cv::Mat mat = convertQImageToMat(image);
+
+    // 转化成灰度图像并进行平滑处理
+    cv::Mat gray;
+    cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
+    blur(gray, gray, cv::Size(3,3));
+
+    // 计算平均值和方差
+    cv::Mat mean, std;
+    meanStdDev(gray, mean, std);
+
+    double m, s;
+    m = mean.at<double>(0,0);
+    s = std.at<double>(0,0);
+
+    // 寻找最大值和最小值
+    double minVal = 0;
+    double maxVal = 0;
+    cv::minMaxIdx(gray, &minVal, &maxVal, nullptr, nullptr);
+
+    // 根据最值、平均和方差判断光暗程度
+//    if ( maxVal < 180 ) {
+//        if ( maxVal > 140 ) {
+//            return 1;   // 偏暗
+//        } else if ( maxVal > 100 ) {
+//            return 2;   // 过暗
+//        } else {
+//            return 3;   // 非常暗
+//        }
+//    } else if ( maxVal > 254 ) {
+//        if ( s < (GlobalValue::cam_std < 0 ? 55 : GlobalValue::cam_std + 15) ) {
+//            return 4;   // 偏亮
+//        } else if ( s < (GlobalValue::cam_std < 0 ? 70 : GlobalValue::cam_std + 30) ) {
+//            return 5;   // 过亮
+//        } else {
+//            return 6;   // 非常亮
+//        }
+//    } else {
+//        GlobalValue::cam_std = s;
+        return 0;   // 合适
+//    }
+}
+
 std::vector<cv::Mat> GlobalFun::cvtBGR2GRAY(const std::vector<cv::Mat> &vec, cv::Rect rect, bool state)
 {
     std::vector<cv::Mat> ret;
@@ -352,23 +400,24 @@ QImage GlobalFun::convertMatToQImage(const cv::Mat mat)
 cv::Mat GlobalFun::dataProcessing(cv::Mat mat, bool state)
 {
     double minV = 0, maxV = 0;
+    cv::Mat temp = mat.clone();     // clone mat
 
-    cv::Mat tmpMask = mat == mat;   // 不相等为0，相等为1（nan与nan不相等）
+    cv::Mat tmpMask = temp == temp; // 不相等为0，相等为1（nan与nan不相等）
 
-    cv::minMaxIdx(mat, &minV, &maxV, nullptr, nullptr, mat == mat); // 找出最小、最大值
+    cv::minMaxIdx(temp, &minV, &maxV, nullptr, nullptr, temp == temp);  // 找出最小、最大值
     if (abs(maxV - minV) > 0.00000001) {
-        mat = (mat - minV) / (maxV - minV) * 255;   // 数值在0~255之间
+        temp = (temp - minV) / (maxV - minV) * 255;     // 数值在0~255之间
     }
 
-    mat.convertTo(mat, CV_8UC1);
-    cv::applyColorMap(mat, mat, cv::COLORMAP_JET);
+    temp.convertTo(temp, CV_8UC1);
+    cv::applyColorMap(temp, temp, cv::COLORMAP_JET);
 
     if ( state ) {
-        mat.setTo(cv::Vec3b(255, 255, 255), ~tmpMask);
+        temp.setTo(cv::Vec3b(255, 255, 255), ~tmpMask);
     } else {
-        mat.setTo(nan(""), ~tmpMask);
+        temp.setTo(nan(""), ~tmpMask);
     }
-    return mat.clone();
+    return temp;
 }
 
 cv::Mat GlobalFun::createAlpha(cv::Mat& src)
@@ -426,12 +475,12 @@ void GlobalFun::autoAim(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal center
     // 确定中心点
     int centerX = src.cols/2 + centerXDis;
     int centerY = src.rows/2 + centerYDis;
-    int boundary = 5;
+    int boundary = 1;
     cv::Point centerPoint;
 
     // 得到包含二维点集的最小圆的圆心的半径
     cv::Point2f center;
-    getMinCircle(src, ori, center, radius);
+    getMinCircle(src, ori, centerX, centerY, min_radius, center, radius);
 
     if ( radius == 0 ) {
         xDis = 0;
@@ -443,10 +492,10 @@ void GlobalFun::autoAim(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal center
 
         qreal x = centerX - centerPoint.x;
         qreal y = centerY - centerPoint.y;
-        qreal z = radius / min_radius;;
+        qreal z = radius / min_radius;
         xDis = abs(x) >= boundary ? x : 0;
         yDis = abs(y) >= boundary ? y : 0;
-        zMult = z > 1.5 ? z : 0;
+        zMult = z > 1 ? z : 0;
     }
 
     //---------------------------------
@@ -638,6 +687,80 @@ void GlobalFun::getMinCircle(cv::Mat src, cv::Mat ori, cv::Point2f &center, floa
     // 数据初始化
     center = cv::Point2f(0, 0);
     radius = 0;
+
+    if ( contours.size() != 0 )
+    {
+        size_t index = 0;
+        size_t maxSize = 0;
+
+        // 寻找最大的点集
+        for ( size_t i = 0; i < contours.size(); ++i )
+        {
+            if ( contours[i].size() > maxSize ) {
+                maxSize = contours[i].size();
+                index = i;
+            }
+        }
+
+        // 得到包含二维点集的最小圆的圆心的半径
+        vector<cv::Point> contours_poly = contours[index];
+        minEnclosingCircle(contours_poly, center, radius);
+    }
+}
+
+void GlobalFun::getMinCircle(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal centerYDis,
+                             qreal min_radius, cv::Point2f &center, float &radius)
+{
+    // 数据初始化
+    center = cv::Point2f(0, 0);
+    radius = 0;
+
+    // 转化成灰度图像并进行平滑处理
+    cv::Mat src_gray, ori_gray, gray;
+    cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
+    cvtColor(ori, ori_gray, cv::COLOR_BGR2GRAY);
+    gray = src_gray - ori_gray;
+    blur(gray, gray, cv::Size(3,3));
+
+    // 三角阈值化
+    cv::Mat triangle;
+    threshold(gray, triangle, 0, 255, cv::THRESH_TRIANGLE);
+
+    // 过滤小于设置点数的图形
+    bwareaopen(triangle, triangle, 20);
+
+    // 腐蚀
+    cv::Mat element = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    cv::erode(triangle, triangle, element);
+
+    // 过滤小于设置点数的图形
+    bwareaopen(triangle, triangle, 3);
+
+    // 找到所有轮廓
+    vector<vector<cv::Point>> contours;
+    vector<cv::Vec4i> hierarchy;
+    findContours(triangle, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, cv::Point(0, 0));
+
+    if ( contours.size() == 1 ) {
+        // 得到包含二维点集的最小圆的圆心的半径
+        minEnclosingCircle(contours[0], center, radius);
+
+        qreal x = abs(centerXDis - center.x);
+        qreal y = abs(centerYDis - center.y);
+        if ( x < 15 && y < 15 && radius < min_radius*1.5 ) {
+            return;
+        }
+    }
+
+    // 自适应阈值法
+    cv::Mat otsu;
+    threshold(gray, otsu, 0, 255, cv::THRESH_OTSU);
+
+    // 过滤小于设置点数的图形
+    bwareaopen(otsu, otsu, 30);
+
+    // 找到所有轮廓
+    findContours(otsu, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, cv::Point(0, 0));
 
     if ( contours.size() != 0 )
     {
