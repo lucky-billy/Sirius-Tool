@@ -123,6 +123,9 @@ public:
     // 得到包含二维点集的最小圆的圆心的半径
     static void getMinCircle(cv::Mat src, cv::Mat ori, cv::Point2f &center, float &radius);
 
+    // 得到包含二维点集的最小圆的圆心的半径
+    static void getMinCircle(cv::Mat src, cv::Mat ori, qreal centerX, qreal centerY, cv::Point2f &center, float &radius);
+
     // 删除二值图像中面积小于设置像素值的对象
     static void bwareaopen(cv::Mat src, cv::Mat &dst, double min_area);
 

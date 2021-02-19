@@ -480,7 +480,7 @@ void GlobalFun::autoAim(cv::Mat src, cv::Mat ori, qreal centerXDis, qreal center
 
     // 得到包含二维点集的最小圆的圆心的半径
     cv::Point2f center;
-    getMinCircle(src, ori, center, radius);
+    getMinCircle(src, ori, centerX, centerY, center, radius);
 
     if ( radius == 0 ) {
         xDis = 0;
@@ -687,6 +687,62 @@ void GlobalFun::getMinCircle(cv::Mat src, cv::Mat ori, cv::Point2f &center, floa
     // 数据初始化
     center = cv::Point2f(0, 0);
     radius = 0;
+
+    if ( contours.size() != 0 )
+    {
+        size_t index = 0;
+        size_t maxSize = 0;
+
+        // 寻找最大的点集
+        for ( size_t i = 0; i < contours.size(); ++i )
+        {
+            if ( contours[i].size() > maxSize ) {
+                maxSize = contours[i].size();
+                index = i;
+            }
+        }
+
+        // 得到包含二维点集的最小圆的圆心的半径
+        vector<cv::Point> contours_poly = contours[index];
+        minEnclosingCircle(contours_poly, center, radius);
+    }
+}
+
+void GlobalFun::getMinCircle(cv::Mat src, cv::Mat ori, qreal centerX, qreal centerY, cv::Point2f &center, float &radius)
+{
+    // 数据初始化
+    center = cv::Point2f(0, 0);
+    radius = 0;
+
+    // 转化成灰度图像并进行平滑处理
+    cv::Mat src_gray, ori_gray, gray;
+    cvtColor(src, src_gray, cv::COLOR_BGR2GRAY);
+    cvtColor(ori, ori_gray, cv::COLOR_BGR2GRAY);
+    gray = src_gray - ori_gray;
+    blur(gray, gray, cv::Size(3, 3));
+
+    // 中心填充
+    int x = (int)centerX - 3;
+    int y = (int)centerY - 3;
+    for ( int i = 0; i < 7; ++i )
+    {
+        for ( int j = 0; j < 7; ++j )
+        {
+            gray.at<char>(y + j, x + i) = 127;
+        }
+    }
+
+    // 自适应阈值法
+    cv::Mat threshold_output;
+    threshold(gray, threshold_output, 0, 255, cv::THRESH_OTSU);
+
+    // 过滤小于设置点数的图形
+    bwareaopen(threshold_output, threshold_output, 30);
+
+    // 找到所有轮廓
+    vector<vector<cv::Point>> contours;
+    vector<cv::Vec4i> hierarchy;
+    findContours(threshold_output, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, cv::Point(0, 0));
 
     if ( contours.size() != 0 )
     {
