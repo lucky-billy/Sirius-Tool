@@ -89,8 +89,8 @@ void MainWindow::initData()
 
         if ( module == 2 ) {
             // ×Ô¶¯¶Ô½¹
-            cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim1/%1.png").arg(count).toStdString());
-            cv::Mat ori = cv::imread("../Sirius-Tool/test/aim1/origin.png");
+            cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim3/%1.png").arg(count).toStdString());
+            cv::Mat ori = cv::imread("../Sirius-Tool/test/aim3/origin.png");
             qreal xDis = 0;
             qreal yDis = 0;
             qreal zDis = 0;
@@ -150,7 +150,7 @@ void MainWindow::initData()
             ui->label->setPixmap(QPixmap::fromImage(pic));
 
             count++;
-            if ( count == 10177 ) { count = 10001; }
+            if ( count == 499 ) { count = 1; }
         }
 
         if ( module == 3 ) {
@@ -366,8 +366,8 @@ void MainWindow::drawMask(QImage &image)
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     if ( event->key() == Qt::Key_Enter ) {
-        cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim2/%1.png").arg(count).toStdString());
-        cv::Mat ori = cv::imread("../Sirius-Tool/test/aim2/origin.png");
+        cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim4/%1.png").arg(count).toStdString());
+        cv::Mat ori = cv::imread("../Sirius-Tool/test/aim4/origin.png");
         qreal xDis = 0;
         qreal yDis = 0;
         qreal zDis = 0;
@@ -428,7 +428,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         ui->label->setPixmap(QPixmap::fromImage(pic));
 
         count++;
-        if ( count == 543 ) { count = 1; }
+        if ( count == 552 ) { count = 1; }
     }
 }
 
