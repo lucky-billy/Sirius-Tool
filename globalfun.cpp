@@ -752,6 +752,23 @@ void GlobalFun::getMinCircle(cv::Mat src, cv::Mat ori, qreal centerX, qreal cent
         // 寻找最大的点集
         for ( size_t i = 0; i < contours.size(); ++i )
         {
+            // 去除中心区域的干扰
+            if ( contours[i].size() == 24 ) {
+                bool state = false;
+
+                for ( auto p : contours[i] )
+                {
+                    if ( p.x == x && p.y == y ) {
+                        state = true;
+                        break;
+                    }
+                }
+
+                if ( state ) {
+                    continue;
+                }
+            }
+
             if ( contours[i].size() > maxSize ) {
                 maxSize = contours[i].size();
                 index = i;
