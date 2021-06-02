@@ -366,69 +366,141 @@ void MainWindow::drawMask(QImage &image)
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     if ( event->key() == Qt::Key_Enter ) {
-        cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim4/%1.png").arg(count).toStdString());
-        cv::Mat ori = cv::imread("../Sirius-Tool/test/aim4/origin.png");
-        qreal xDis = 0;
-        qreal yDis = 0;
-        qreal zDis = 0;
-        qreal min_radius = 10;
+        int module = 2;
 
-        cv::Mat ret;
-        qreal centerXDis = 0;
-        qreal centerYDis = 0;
-        float radius = 0;
-        GlobalFun::centerCalibration(src, ret, centerXDis, centerYDis);
-        GlobalFun::autoAim(src, ori, centerXDis, centerYDis, min_radius, xDis, yDis, zDis, radius);
-        qDebug() << "radius: " << radius;
+        if ( module == 1 ) {
+            // 自动对焦
+            cv::Mat src = cv::imread(QString("../Sirius-Tool/test/aim4/%1.png").arg(count).toStdString());
+            cv::Mat ori = cv::imread("../Sirius-Tool/test/aim4/origin.png");
+            qreal xDis = 0;
+            qreal yDis = 0;
+            qreal zDis = 0;
+            qreal min_radius = 10;
 
-        QString str = QString("%1 - ").arg(count);
-        if ( xDis > 0 ) {
-            str += QStringLiteral("需向右 ") + QString::number(xDis);
-        } else if ( xDis < 0 ) {
-            str += QStringLiteral("需向左 ") + QString::number(-xDis);
-        } else {
-            // pass
+            cv::Mat ret;
+            qreal centerXDis = 0;
+            qreal centerYDis = 0;
+            float radius = 0;
+            GlobalFun::centerCalibration(src, ret, centerXDis, centerYDis);
+            GlobalFun::autoAim(src, ori, centerXDis, centerYDis, min_radius, xDis, yDis, zDis, radius);
+            qDebug() << "radius: " << radius;
+
+            QString str = QString("%1 - ").arg(count);
+            if ( xDis > 0 ) {
+                str += QStringLiteral("需向右 ") + QString::number(xDis);
+            } else if ( xDis < 0 ) {
+                str += QStringLiteral("需向左 ") + QString::number(-xDis);
+            } else {
+                // pass
+            }
+
+            if ( yDis > 0 ) {
+                str += QStringLiteral(" 需向下 ") + QString::number(yDis);
+            } else if ( yDis < 0 ) {
+                str += QStringLiteral(" 需向上 ") + QString::number(-yDis);
+            } else {
+                // pass
+            }
+
+            if ( zDis != 0 ) {
+                str += QStringLiteral(" 需缩小 ") + QString::number(zDis) + QStringLiteral(" 倍");
+            } else {
+                // pass
+            }
+
+            if ( xDis == 0 && yDis == 0 && zDis == 0 ) {
+                str += QStringLiteral("对准完成");
+            }
+
+            QImage image = GlobalFun::convertMatToQImage(src);
+            QImage pic = image.scaled(ui->label->width(), ui->label->height(), Qt::KeepAspectRatio);
+            QPainter painter(&pic);
+            QFont font;
+            font.setBold(true);
+            font.setPixelSize(32);
+            painter.setFont(font);
+            QPen pen(Qt::red);
+            painter.setPen(pen);
+            painter.drawText(10, 40, str);
+
+            int wl = this->geometry().width();
+            int hl = this->geometry().height() - 40;
+            int wp = pic.width();
+            int hp = pic.height();
+
+            ui->label->setGeometry( (wl - wp) / 2.0, (hl - hp) / 2.0, pic.width(), pic.height() );
+            ui->label->setPixmap(QPixmap::fromImage(pic));
+
+            count++;
+            if ( count == 552 ) { count = 1; }
         }
 
-        if ( yDis > 0 ) {
-            str += QStringLiteral(" 需向下 ") + QString::number(yDis);
-        } else if ( yDis < 0 ) {
-            str += QStringLiteral(" 需向上 ") + QString::number(-yDis);
-        } else {
-            // pass
+        else if ( module == 2 ) {
+            // 光暗自动调节
+            cv::Mat mat = cv::imread(QString("../Sirius-Tool/test/overExposure2/%1.png").arg(count).toStdString());
+
+            cv::Mat gray;
+            cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
+            blur(gray, gray, cv::Size(3,3));
+
+            cv::Mat mean, std;
+            meanStdDev(gray, mean, std);
+
+            double m, s;
+            m = mean.at<double>(0,0);
+            s = std.at<double>(0,0);
+
+            QString str = QString("%1 - ").arg(count);
+            str += "mean: " + QString::number(m) + ", std: " + QString::number(s);
+
+            double minVal = 0;
+            double maxVal = 0;
+            cv::minMaxIdx(gray, &minVal, &maxVal, nullptr, nullptr);
+            str += ", maxVal: " + QString::number(maxVal);
+
+            if ( maxVal < 180 ) {
+                if ( maxVal > 140 ) {
+                    str += QStringLiteral(" - 偏暗");
+                } else if ( maxVal > 100 ) {
+                    str += QStringLiteral(" - 过暗");
+                } else {
+                    str += QStringLiteral(" - 非常暗");
+                }
+            } else if ( maxVal > 254 ) {
+                if ( s < 80 ) {
+                    str += QStringLiteral(" - 偏亮");
+                } else if ( s < 100 ) {
+                    str += QStringLiteral(" - 过亮");
+                } else {
+                    str += QStringLiteral(" - 非常亮");
+                }
+            } else {
+                str += QStringLiteral(" - 正合适");
+            }
+            qDebug() << str;
+
+            QImage image = GlobalFun::convertMatToQImage(mat);
+            QImage pic = image.scaled(ui->label->width(), ui->label->height(), Qt::KeepAspectRatio);
+            QPainter painter(&pic);
+            QFont font;
+            font.setBold(true);
+            font.setPixelSize(24);
+            painter.setFont(font);
+            QPen pen(Qt::red);
+            painter.setPen(pen);
+            painter.drawText(10, 40, str);
+
+            int wl = this->geometry().width();
+            int hl = this->geometry().height() - 40;
+            int wp = pic.width();
+            int hp = pic.height();
+
+            ui->label->setGeometry( (wl - wp) / 2.0, (hl - hp) / 2.0, pic.width(), pic.height() );
+            ui->label->setPixmap(QPixmap::fromImage(pic));
+
+            count++;
+            if ( count == 125 ) { count = 1; }
         }
-
-        if ( zDis != 0 ) {
-            str += QStringLiteral(" 需缩小 ") + QString::number(zDis) + QStringLiteral(" 倍");
-        } else {
-            // pass
-        }
-
-        if ( xDis == 0 && yDis == 0 && zDis == 0 ) {
-            str += QStringLiteral("对准完成");
-        }
-
-        QImage image = GlobalFun::convertMatToQImage(src);
-        QImage pic = image.scaled(ui->label->width(), ui->label->height(), Qt::KeepAspectRatio);
-        QPainter painter(&pic);
-        QFont font;
-        font.setBold(true);
-        font.setPixelSize(32);
-        painter.setFont(font);
-        QPen pen(Qt::red);
-        painter.setPen(pen);
-        painter.drawText(10, 40, str);
-
-        int wl = this->geometry().width();
-        int hl = this->geometry().height() - 40;
-        int wp = pic.width();
-        int hp = pic.height();
-
-        ui->label->setGeometry( (wl - wp) / 2.0, (hl - hp) / 2.0, pic.width(), pic.height() );
-        ui->label->setPixmap(QPixmap::fromImage(pic));
-
-        count++;
-        if ( count == 552 ) { count = 1; }
     }
 }
 
